@@ -864,7 +864,7 @@ def change_data_orientation(data, old_orientation='RPI', orientation="RPI"):
 
 # crop 2D images along x and y dimension (with given size, centered with the segmentation) and add pixels on the sizes if necessary
 # ==========================================================================================
-def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_name, output_name_seg, center_seg):
+def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_name, output_name_seg, center_seg, fname_slice_GM = None, output_GM = None):
 
     """""
     :param fname_slice: input image
@@ -874,6 +874,9 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
     :param output_name: path, file and extension of the output folder
     :return:
     """
+
+    print fname_slice_GM
+    print output_GM
     from scipy import ndimage
     import random
     import numpy as np
@@ -890,11 +893,12 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
         cofb =np.zeros(2)
         sens_list = [-1, 1]
         sens = random.randrange(0,2)
-        translation_x = random.randrange(0,max(1,min(int(cof[0]-fname_size_x/2), int(nx - cof[0]+fname_size_x/2))))
+        translation_x = random.randrange(0,max(10,min(int(cof[0]-fname_size_x/2), int(nx - cof[0]+fname_size_x/2))))
         cofb[0] =  cof[0] + sens_list[sens] * translation_x
         sens = random.randrange(0, 1)
-        translation_y = random.randrange(0, max(1,min(int(cof[1]-fname_size_y/2), int(ny - cof[1]+fname_size_y/2))))
+        translation_y = random.randrange(0, max(10,min(int(cof[1]-fname_size_y/2), int(ny - cof[1]+fname_size_y/2))))
         cofb[1] = cof[1] + sens_list[sens] * translation_y
+
     # crop the image along the x,y direction
     start_x = float(cofb[0] - fname_size_x/2)
     start_y = float(cofb[1] - fname_size_y/2)
@@ -903,6 +907,11 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
 
     image_slice = Image(fname_slice)
     data_array = np.squeeze(np.asarray(image_slice.data))
+    print fname_slice_GM
+    print fname_slice
+    if fname_slice_GM:
+        image_slice_GM = Image(fname_slice_GM)
+        data_array_GM = np.asarray(image_slice_GM.data)
     lx_start = 0
     lx_stop = 0
     change_x_s = False
@@ -916,6 +925,8 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
         zs = np.zeros((lx_start, ny_s))
         data_array = np.append(z, data_array, axis=0)
         data_array_seg = np.append(zs, data_array_seg, axis=0)
+        if fname_slice_GM:
+            data_array_GM = np.append(zs, data_array_GM, axis=0)
         start_x = 0
         change_x_s = True
     if stop_x >= nx:
@@ -924,6 +935,8 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
         zs = np.zeros((lx_stop, ny_s))
         data_array = np.append(data_array, z, axis=0)
         data_array_seg = np.append(data_array_seg,zs, axis=0)
+        if fname_slice_GM:
+            data_array_GM = np.append(data_array_seg,zs, axis=0)
         stop_x = fname_size_x + start_x
         change_x_e = True
     if start_y < 1:
@@ -931,6 +944,8 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
         z = np.zeros((nx + lx_start + lx_stop, ly_start))
         data_array = np.append(z, data_array, axis=1)
         data_array_seg = np.append(z, data_array_seg, axis=1)
+        if fname_slice_GM:
+            data_array_GM = np.append(z, data_array_GM, axis = 1)
         start_y = 0
         change_y_s = True
     if stop_y >= ny:
@@ -938,30 +953,39 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
         z = np.zeros((nx + lx_start + lx_stop, ly_stop))
         data_array = np.append(data_array, z, axis=1)
         data_array_seg = np.append(data_array_seg, z, axis=1)
+        if fname_slice_GM:
+            data_array_GM = np.append(data_array_seg, z, axis=1)
         stop_y = fname_size_y
         change_y_e = True
     if change_x_s & (not change_x_e):
         stop_x = fname_size_x
     if change_y_s & (not change_y_e):
         stop_y = fname_size_y
-
     path_out, file_out, ext_out = sct.extract_fname(output_name)
-    import matplotlib.pyplot as plt
-    imgplot = plt.imshow(np.squeeze(data_array))
     fname_slice_out = path_out + file_out + "_slice_out" + ext_out
     fname_slice_seg_out = path_out + file_out + "_slice_seg_out" + ext_out
+    if fname_slice_GM:
+        fname_slice_GM_out = path_out + file_out + "_slice_GM_out" + ext_out
+        image_slice_GM.setFileName(fname_slice_GM_out)
+        image_slice_GM.data = data_array_GM
+        image_slice_GM.save()
     image_slice.setFileName(fname_slice_out)
     image_slice_seg.setFileName(fname_slice_seg_out)
     image_slice.data = data_array
     image_slice_seg.data = data_array_seg
     image_slice.save()
     image_slice_seg.save()
-    sct.run("sct_crop_image -i " + fname_slice_out + " -dim 0,1 -start " + str(start_x) + "," + str(start_y) + " -end " + str(stop_x-1) + "," + str(stop_y-1) + " -o " + output_name, verbose=0)
-    sct.run("sct_crop_image -i " + fname_slice_seg_out + " -dim 0,1 -start " + str(start_x) + "," + str(start_y) + " -end " + str(stop_x-1) + "," + str(stop_y-1) + " -o " + output_name_seg, verbose=0)
+
+
+    print "OK5"
+
+    sct.run("sct_crop_image -i " + fname_slice_out + " -dim 0,1 -start " + str(start_x) + "," + str(start_y) + " -end " + str(stop_x-1) + "," + str(stop_y-1) + " -o " + output_name, verbose=1)
+    sct.run("sct_crop_image -i " + fname_slice_seg_out + " -dim 0,1 -start " + str(start_x) + "," + str(start_y) + " -end " + str(stop_x-1) + "," + str(stop_y-1) + " -o " + output_name_seg, verbose=1)
+    if fname_slice_GM:
+        sct.run("sct_crop_image -i " + fname_slice_GM_out + " -dim 0,1 -start " + str(start_x) + "," + str(start_y) + " -end " + str(stop_x - 1) + "," + str(stop_y - 1) + " -o " + output_GM, verbose=1)
 
     # get the curent folder
     # out the origine at (0,0)
-
     im_file_src = Image(output_name)
     im_file_src.hdr.structarr['qoffset_x'] = im_file_src.hdr.structarr['qoffset_y'] = im_file_src.hdr.structarr['qoffset_z'] = im_file_src.hdr.structarr['srow_x'][-1] = im_file_src.hdr.structarr['srow_y'][-1] = im_file_src.hdr.structarr['srow_z'][-1] = 0
     im_file_src.setFileName(output_name)
@@ -972,10 +996,22 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
     im_file_src.setFileName(output_name_seg)
     im_file_src.save()
 
+    if fname_slice_GM:
+        im_file_src = Image(output_GM)
+        im_file_src.hdr.structarr['qoffset_x'] = im_file_src.hdr.structarr['qoffset_y'] = im_file_src.hdr.structarr[
+            'qoffset_z'] = im_file_src.hdr.structarr['srow_x'][-1] = im_file_src.hdr.structarr['srow_y'][-1] = \
+        im_file_src.hdr.structarr['srow_z'][-1] = 0
+        im_file_src.setFileName(output_GM)
+        im_file_src.save()
+
+
     # Delete temporary files
     sct.printv('\nRemove temporary files...')
     sct.run('rm -rf ' + path_out + '/'+ file_out + "_slice_out" + ext_out, verbose=0)
     sct.run('rm -rf ' + path_out +'/'+ file_out + "_slice_seg_out" + ext_out, verbose=0)
+    if output_name:
+        sct.run('rm -rf ' + path_out + '/' + file_out + "_slice_GM_out" + ext_out, verbose=0)
+
 
 # =======================================================================================================================
 # Start program
