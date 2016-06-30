@@ -885,7 +885,6 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
     # find the mass center of each slice
     image_slice_seg = Image(fname_slice_seg)
     data_array_seg = np.squeeze(np.asarray(image_slice_seg.data))
-    sct.printv("shape de data_array seg : " + str(np.shape(data_array_seg)))
     cof = ndimage.measurements.center_of_mass(data_array_seg)
     if center_seg:
         cofb = cof
@@ -907,13 +906,11 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
 
     image_slice = Image(fname_slice)
     data_array = np.squeeze(np.asarray(image_slice.data))
-    sct.printv("shape de data_array : " + str(np.shape(data_array)))
 
 
     if fname_slice_GM:
         image_slice_GM = Image(fname_slice_GM)
         data_array_GM = np.squeeze(np.asarray(image_slice_GM.data))
-        sct.printv("shape de data_array gm : " + str(np.shape(data_array_GM)))
     lx_start = 0
     lx_stop = 0
     change_x_s = False
@@ -978,30 +975,6 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
     image_slice_seg.data = data_array_seg
     image_slice.save()
     image_slice_seg.save()
-
-    # get the curent folder
-    # out the origine at (0,0)
-    im_file_src = Image(fname_slice_out)
-    im_file_src.hdr.structarr['qoffset_x'] = im_file_src.hdr.structarr['qoffset_y'] = im_file_src.hdr.structarr[
-        'qoffset_z'] = im_file_src.hdr.structarr['srow_x'][-1] = im_file_src.hdr.structarr['srow_y'][-1] = \
-    im_file_src.hdr.structarr['srow_z'][-1] = 0
-    im_file_src.setFileName(fname_slice_out)
-    im_file_src.save()
-
-    im_file_src = Image(fname_slice_seg_out)
-    im_file_src.hdr.structarr['qoffset_x'] = im_file_src.hdr.structarr['qoffset_y'] = im_file_src.hdr.structarr[
-        'qoffset_z'] = im_file_src.hdr.structarr['srow_x'][-1] = im_file_src.hdr.structarr['srow_y'][-1] = \
-    im_file_src.hdr.structarr['srow_z'][-1] = 0
-    im_file_src.setFileName(fname_slice_seg_out)
-    im_file_src.save()
-
-    if fname_slice_GM:
-        im_file_src = Image(fname_slice_GM_out)
-        im_file_src.hdr.structarr['qoffset_x'] = im_file_src.hdr.structarr['qoffset_y'] = im_file_src.hdr.structarr[
-            'qoffset_z'] = im_file_src.hdr.structarr['srow_x'][-1] = im_file_src.hdr.structarr['srow_y'][-1] = \
-        im_file_src.hdr.structarr['srow_z'][-1] = 0
-        im_file_src.setFileName(fname_slice_GM_out)
-        im_file_src.save()
 
     sct.run("sct_crop_image -i " + fname_slice_out + " -dim 0,1 -start " + str((start_x)) + "," + str(start_y) + " -end " + str(start_x +fname_size_x-1) + "," + str(start_y +fname_size_y-1) + " -o " + output_name, verbose=1)
     sct.run("sct_crop_image -i " + fname_slice_seg_out + " -dim 0,1 -start " + str(start_x) + "," + str(start_y) + " -end " + str(start_x +fname_size_x-1) + "," + str(start_y +fname_size_y-1) + " -o " + output_name_seg, verbose=1)
