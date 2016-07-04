@@ -913,10 +913,7 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
         data_array_GM = np.squeeze(np.asarray(image_slice_GM.data))
     lx_start = 0
     lx_stop = 0
-    change_x_s = False
-    change_x_e = False
-    change_y_s = False
-    change_y_e = False
+
     nx_s, ny_s, nz_s, nt_s, px_s, py_s, pz_s, pt_s = Image(fname_slice_seg).dim
     if start_x < 1:
         lx_start = round(abs(cofb[0] - fname_size_x/2)+1)
@@ -927,39 +924,31 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
         if fname_slice_GM:
             data_array_GM = np.append(zs, data_array_GM, axis=0)
         start_x = 0
-        change_x_s = True
     if stop_x >= nx:
         lx_stop = ceil(cofb[0] + fname_size_x/2 - nx)
         z = np.zeros((lx_stop, ny))
         zs = np.zeros((lx_stop, ny_s))
         data_array = np.append(data_array, z, axis=0)
-        data_array_seg = np.append(data_array_seg,zs, axis=0)
+        data_array_seg = np.append(data_array_seg, zs, axis=0)
         if fname_slice_GM:
-            data_array_GM = np.append(data_array_seg,zs, axis=0)
-        stop_x = fname_size_x + start_x
-        change_x_e = True
+            data_array_GM = np.append(data_array_GM, zs, axis=0)
     if start_y < 1:
         ly_start = round(abs(cofb[1] - fname_size_y/2)+1)
-        z = np.zeros((nx + lx_start + lx_stop, ly_start))
-        data_array = np.append(z, data_array, axis=1)
+        z = np.zeros((np.shape(data_array)[0], ly_start))
+        sct.printv(str(np.shape(z)))
+        data_array = np.append(z, data_array, axis= 1)
         data_array_seg = np.append(z, data_array_seg, axis=1)
         if fname_slice_GM:
             data_array_GM = np.append(z, data_array_GM, axis = 1)
         start_y = 0
-        change_y_s = True
     if stop_y >= ny:
         ly_stop = ceil(cofb[1] + fname_size_y/2 - ny)
         z = np.zeros((nx + lx_start + lx_stop, ly_stop))
+        zs = np.zeros((nx_s + lx_start + lx_stop, ly_stop))
         data_array = np.append(data_array, z, axis=1)
-        data_array_seg = np.append(data_array_seg, z, axis=1)
+        data_array_seg = np.append(data_array_seg, zs, axis=1)
         if fname_slice_GM:
             data_array_GM = np.append(data_array_GM, z, axis=1)
-        stop_y = fname_size_y
-        change_y_e = True
-    if change_x_s & (not change_x_e):
-        stop_x = fname_size_x
-    if change_y_s & (not change_y_e):
-        stop_y = fname_size_y
 
     path_out, file_out, ext_out = sct.extract_fname(output_name)
     fname_slice_out = path_out + file_out + "_slice_out" + ext_out
@@ -1001,11 +990,11 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
 
 
     # Delete temporary files
-    sct.printv('\nRemove temporary files...')
-    sct.run('rm -rf ' + path_out + '/'+ file_out + "_slice_out" + ext_out, verbose=0)
-    sct.run('rm -rf ' + path_out + '/' + file_out + "_slice_seg_out" + ext_out, verbose=0)
-    if output_GM:
-        sct.run('rm -rf ' + path_out + '/' + file_out + "_slice_GM_out" + ext_out, verbose=0)
+    #sct.printv('\nRemove temporary files...')
+    #sct.run('rm -rf ' + path_out + file_out + "_slice_out" + ext_out, verbose=0)
+    #sct.run('rm -rf ' + path_out + '/' + file_out + "_slice_seg_out" + ext_out, verbose=0)
+    #if output_GM:
+    #    sct.run('rm -rf ' + path_out + file_out + "_slice_GM_out" + ext_out, verbose=0)
 
 
 # =======================================================================================================================

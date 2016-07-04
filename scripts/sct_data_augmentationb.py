@@ -66,16 +66,11 @@ def main():
                       description="Segmentation of the image wich will be modified.",
                       mandatory=False,
                       example="dest_seg.nii.gz")
-    parser.add_option(name="-lx",
-                      type_value="int",
-                      description="size of the image at x",
+    parser.add_option(name="-dim",
+                      type_value=[[','], 'float'],
+                      description="size of the image at x and y and resolution of the pixel at x and y",
                       mandatory=True,
-                      example="50")
-    parser.add_option(name="-ly",
-                      type_value="int",
-                      description="size of the image at y",
-                      mandatory=True,
-                      example="50")
+                      example="164, 164, 0.5, 0.5")
     parser.add_option(name="-nb",
                       type_value="int",
                       description="number of random slice we apply the wrap on",
@@ -123,8 +118,7 @@ def main():
 
     # get argument
     arguments = parser.parse(sys.argv[1:])
-    fname_size_x = arguments['-lx']
-    fname_size_y = arguments['-ly']
+    dim_list = arguments['-dim']
     nbre_slice = arguments['-nb']
     nbre_wrap = arguments['-nw']
     verbose = int(arguments['-v'])
@@ -156,9 +150,13 @@ def main():
     # create a folder with all the images
     list_data, dirs_name = extract_name_list(folder_path, GM)
 
+
     # resample data to 1x1x1 mm^3 and crop them along the segmentation
     start_time = time.time()
-    arguments = [(list_data[iter*3], list_data[iter*3+1], v, list_data[iter*3+1]) for iter in range(0, len(list_data)/3)]
+    if GM:
+        arguments = [(list_data[iter*3], list_data[iter*3+1], v, list_data[iter*3+2], folder_path, dim_list[2], dim_list[3]) for iter in range(0, len(list_data)/3)]
+    else:
+        arguments = [(list_data[iter * 2], list_data[iter * 2 + 1], v, list_data[iter] * 2 + 1, folder_path, dim_list[2], dim_list[3]) for iter in range(0, len(list_data) / 2)]
 
     if cpu_number != 0:
         pool = Pool(cpu_number)
@@ -175,9 +173,14 @@ def main():
             print e
             sys.exit(2)
     else:
-        for iter in range(0, len(list_data)/3):
-            arguments_src = (list_data[iter*3], list_data[iter*3+1], v, list_data[iter*3+1])
-            worker_resized_and_crop(arguments_src)
+        if GM:
+            for iter in range(0, len(list_data)/3):
+                arguments_src = (list_data[iter*3], list_data[iter*3+1], v, list_data[iter*3+2], folder_path, dim_list[2], dim_list[3])
+                worker_resized_and_crop(arguments_src)
+        else:
+            for iter in range(0, len(list_data) / 2):
+                arguments_src = (list_data[iter * 2], list_data[iter * 2 + 1], v, list_data[iter * 2 + 2], folder_path, dim_list[2], dim_list[3])
+                worker_resized_and_crop(arguments_src)
 
     if verbose:
         elapsed_time = time.time() - start_time
@@ -195,7 +198,7 @@ def main():
                     os.makedirs("Slices_" + file)
 
                 nx, ny, nz, nt, px, py, pz, pt = Image(folder_path + '/' + str(list_data[iter * 2])).dim
-                arguments = [(folder_path + '/' + str(list_data[iter * 2]), folder_path + '/' + str(list_data[iter * 2 + 1]), fname_size_x, fname_size_y, v, i, center_seg, None) for i in range(1,nz)]
+                arguments = [(folder_path + '/' + str(list_data[iter * 2]), folder_path + '/' + str(list_data[iter * 2 + 1]), dim_list[0], dim_list[1], v, i, center_seg, None) for i in range(1,nz)]
 
                 if cpu_number != 0:
                     try:
@@ -212,7 +215,7 @@ def main():
                         sys.exit(2)
                 else:
                     for i in range(1, nz):
-                        worker_slice_and_crop(folder_path + '/' + str(list_data[iter * 2]), folder_path + '/' + str(list_data[iter * 2 + 1]), fname_size_x, fname_size_y, v, i, center_seg)
+                        worker_slice_and_crop(folder_path + '/' + str(list_data[iter * 2]), folder_path + '/' + str(list_data[iter * 2 + 1]), dim_list[0], dim_list[1], v, i, center_seg)
         if GM:
             for iter in range(0, len(list_data) / 3):
 
@@ -221,7 +224,7 @@ def main():
                     os.makedirs("Slices_" + dirs_name[iter])
 
                 nx, ny, nz, nt, px, py, pz, pt = Image(folder_path + '/' + str(list_data[iter * 3])).dim
-                arguments = [(folder_path + '/' + str(list_data[iter * 3]), folder_path + '/' + str(list_data[iter * 3 + 1]), fname_size_x, fname_size_y, v, i, center_seg, folder_path + '/' + str(list_data[iter * 3 + 2]), dirs_name[iter]) for i in range(1, nz)]
+                arguments = [(folder_path + '/' + str(list_data[iter * 3]), folder_path + '/' + str(list_data[iter * 3 + 1]), dim_list[0], dim_list[1], v, i, center_seg, folder_path + '/' + str(list_data[iter * 3 + 2]), dirs_name[iter]) for i in range(1, nz)]
 
                 if cpu_number != 0:
                     try:
@@ -238,7 +241,7 @@ def main():
                         sys.exit(2)
                 else:
                     for i in range(1, nz):
-                        worker_slice_and_crop(folder_path + '/' + str(list_data[iter * 2]), folder_path + '/' + str(list_data[iter * 2 + 1]), fname_size_x, fname_size_y, v, i, center_seg)
+                        worker_slice_and_crop(folder_path + '/' + str(list_data[iter * 2]), folder_path + '/' + str(list_data[iter * 2 + 1]), dim_list[0], dim_list[1], v, i, center_seg)
 
     if nbre_slice != 0 and nbre_wrap != 0 :
         # choose randomly a source and a destination
@@ -292,13 +295,13 @@ def main():
         # choose a random slice in each source image
         start_time = time.time()
         if GM :
-            arguments_slice_src = [(fname_src[iter], fname_src_seg[iter], fname_size_x, fname_size_y, folder_path, v, center_seg, fname_src_GM[iter], dirs_name_src[iter]) for iter in range(0, nbre_wrap)]
-            arguments_slice_dest = [(fname_dest[iter], fname_dest_seg[iter], fname_size_x, fname_size_y, folder_path, v, center_seg, fname_dest_GM[iter], dirs_name_dest[iter]) for iter in range(0, nbre_wrap)]
-            arguments_slice_im = [(fname_im[iter], fname_im_seg[iter], fname_size_x, fname_size_y, folder_path, v, center_seg, fname_im_GM[iter], dirs_name_im[iter]) for iter in range(0, (nbre_wrap * nbre_slice))]
+            arguments_slice_src = [(fname_src[iter], fname_src_seg[iter], dim_list[0], dim_list[1], folder_path, v, center_seg, fname_src_GM[iter], dirs_name_src[iter]) for iter in range(0, nbre_wrap)]
+            arguments_slice_dest = [(fname_dest[iter], fname_dest_seg[iter], dim_list[0], dim_list[1], folder_path, v, center_seg, fname_dest_GM[iter], dirs_name_dest[iter]) for iter in range(0, nbre_wrap)]
+            arguments_slice_im = [(fname_im[iter], fname_im_seg[iter], dim_list[0], dim_list[1], folder_path, v, center_seg, fname_im_GM[iter], dirs_name_im[iter]) for iter in range(0, (nbre_wrap * nbre_slice))]
         else:
-            arguments_slice_src = [(fname_src[iter],fname_src_seg[iter],fname_size_x, fname_size_y, folder_path, v, center_seg, None, None) for iter in range(0, nbre_wrap)]
-            arguments_slice_dest = [(fname_dest[iter], fname_dest_seg[iter], fname_size_x, fname_size_y, folder_path, v, center_seg, None, None) for iter in range(0, nbre_wrap)]
-            arguments_slice_im = [(fname_im[iter], fname_im_seg[iter], fname_size_x, fname_size_y, folder_path, v, center_seg, None, None) for iter in range(0, (nbre_wrap*nbre_slice))]
+            arguments_slice_src = [(fname_src[iter],fname_src_seg[iter],dim_list[0], dim_list[1], folder_path, v, center_seg, None, None) for iter in range(0, nbre_wrap)]
+            arguments_slice_dest = [(fname_dest[iter], fname_dest_seg[iter], dim_list[0], dim_list[1], folder_path, v, center_seg, None, None) for iter in range(0, nbre_wrap)]
+            arguments_slice_im = [(fname_im[iter], fname_im_seg[iter], dim_list[0], dim_list[1], folder_path, v, center_seg, None, None) for iter in range(0, (nbre_wrap*nbre_slice))]
         if cpu_number != 0:
             pool = Pool(cpu_number)
             r1 = pool.map_async(worker_random_slice, arguments_slice_src)
@@ -325,13 +328,13 @@ def main():
                 sys.exit(2)
         else:
             if GM:
-                src, src_seg, nbre_src, src_GM = random_slice(fname_src, fname_src_seg, fname_size_x, fname_size_y, folder_path, nbre_wrap, v, center_seg, fname_src_GM, dirs_name_src)
-                dest, dest_seg, nbre_dest, dest_GM = random_slice(fname_dest, fname_dest_seg, fname_size_x, fname_size_y, folder_path, nbre_wrap, v, center_seg, fname_dest_GM, dirs_name_dest)
-                im, im_seg, nbre_im, im_GM = random_slice(fname_im, fname_im_seg, fname_size_x, fname_size_y, folder_path, nbre_wrap * nbre_slice, v, center_seg, fname_im_GM, dirs_name_im)
+                src, src_seg, nbre_src, src_GM = random_slice(fname_src, fname_src_seg, dim_list[0], dim_list[1], folder_path, nbre_wrap, v, center_seg, fname_src_GM, dirs_name_src)
+                dest, dest_seg, nbre_dest, dest_GM = random_slice(fname_dest, fname_dest_seg, dim_list[0], dim_list[1], folder_path, nbre_wrap, v, center_seg, fname_dest_GM, dirs_name_dest)
+                im, im_seg, nbre_im, im_GM = random_slice(fname_im, fname_im_seg, dim_list[0], dim_list[1], folder_path, nbre_wrap * nbre_slice, v, center_seg, fname_im_GM, dirs_name_im)
             else:
-                src, src_seg, nbre_src = random_slice(fname_src,fname_src_seg, fname_size_x, fname_size_y, folder_path, nbre_wrap, v, center_seg, None, None)
-                dest, dest_seg, nbre_dest = random_slice(fname_dest, fname_dest_seg, fname_size_x, fname_size_y, folder_path, nbre_wrap, v, center_seg, None, None)
-                im, im_seg, nbre_im = random_slice(fname_im, fname_im_seg, fname_size_x, fname_size_y, folder_path, nbre_wrap*nbre_slice, v, center_seg, None, None)
+                src, src_seg, nbre_src = random_slice(fname_src,fname_src_seg, dim_list[0], dim_list[1], folder_path, nbre_wrap, v, center_seg, None, None)
+                dest, dest_seg, nbre_dest = random_slice(fname_dest, fname_dest_seg, dim_list[0], dim_list[1], folder_path, nbre_wrap, v, center_seg, None, None)
+                im, im_seg, nbre_im = random_slice(fname_im, fname_im_seg, dim_list[0], dim_list[1], folder_path, nbre_wrap*nbre_slice, v, center_seg, None, None)
 
         if verbose :
             elapsed_time = time.time() - start_time
@@ -386,9 +389,9 @@ def main():
             sct.printv('\nElapsed time to apply the warping field to random images: ' + str(int(round(elapsed_time))) + 's')
 
         # Delete warping files
-        #for iter in range(0, nbre_wrap):
-        #    sct.run('rm -rf ' + warp[iter] , verbose=v)
-        #    sct.run('rm -rf ' + str(iter) + '0InverseWarp.nii.gz', verbose=v)
+        for iter in range(0, nbre_wrap):
+            sct.run('rm -rf ' + warp[iter] , verbose=v)
+            sct.run('rm -rf ' + str(iter) + '0InverseWarp.nii.gz', verbose=v)
 
         # Total time
         if verbose :
@@ -401,6 +404,7 @@ def extract_name_list(folder_path, GM):
     list_data = []
     dirs_name = []
 
+    sum = 0
     if not GM:
         for root, dirs, files in os.walk(folder_path):
             for file in files:
@@ -418,11 +422,7 @@ def extract_name_list(folder_path, GM):
             for dir in dirs:
                 if dir.find("t2s") == -1 and dir.find("t2") == -1 and dir.find("mt") == -1 and dir.find("dmri") == -1:
                     dirs_name.append(dir)
-            for file in files:
-                if file.find("_gmseg_manual_rater"):
-                    change_name = True
-        if change_name:
-            get_gmseg_from_multilabel(folder_path)
+        get_gmseg_from_multilabel(folder_path)
         for iter, dir in enumerate(dirs_name):
             for root, dirs, files in os.walk(folder_path + '/' + dir):
                 for file in files:
@@ -433,8 +433,12 @@ def extract_name_list(folder_path, GM):
                         file_gmseg = dir + '/t2s/' + subject_name + '_gmseg_manual' + end_name
                         file = dir + '/t2s/' + file
                         list_data.append(file)
+                        nx, ny,nz, nt ,px, py, pz, pt = Image(folder_path + '/' + file).dim
+                        sum += nz
                         list_data.append(file_seg)
                         list_data.append(file_gmseg)
+
+        print sum
     return list_data, dirs_name
 
 #
@@ -450,36 +454,37 @@ def get_gmseg_from_multilabel(path):
     fname_gm = 't2s_gmseg_manual.nii.gz'
     fname_sc = 't2s_seg_manual.nii.gz'
 
-    for sub in os.listdir(path):
-        if os.path.isdir(path_data + '/'+ sub) and sub.find(".DS_Store") == -1:
-            sub_id = sub.split('_')[1]
-            # get multi-label image
-            im_ml = Image(path_data + '/' + sub + '/' + contrast + '/' + fname_multilabel)
-            # GM = 2, WM= 1
-            if int(sub_id) <= 10:
-                # get GM:
-                im_gm = im_ml.copy()
-                im_gm.data[im_gm.data == 2] = 0
-                im_gm.setFileName(path_data + '/' + sub + '/' + contrast + '/' + fname_gm)
-                im_gm.save()
-                # get SC
-                im_sc = im_ml.copy()
-                im_sc.data[im_sc.data > 0] = 1
-                im_sc.setFileName(path_data + '/' + sub + '/' + contrast + '/' + fname_sc)
-                im_sc.save()
-            # GM = 1, WM = 2
-            elif int(sub_id) > 10:
-                # get GM:
-                im_gm = im_ml.copy()
-                im_gm.data[im_gm.data == 1] = 0
-                im_gm.data[im_gm.data == 2] = 1
-                im_gm.setFileName(path_data + '/' + sub + '/' + contrast + '/' + fname_gm)
-                im_gm.save()
-                # get SC
-                im_sc = im_ml.copy()
-                im_sc.data[im_sc.data > 0] = 1
-                im_sc.setFileName(path_data + '/' + sub + '/' + contrast + '/' + fname_sc)
-                im_sc.save()
+    for sub in os.listdir(path_data):
+        if os.path.isdir(path_data + '/'+ sub): # and sub.find(".DS_Store") == -1:
+            if sub.find('challenge') != -1:
+                sub_id = sub.split('_')[1]
+                # get multi-label image
+                im_ml = Image(path_data + '/' + sub + '/' + contrast + '/' + fname_multilabel)
+                # GM = 2, WM= 1
+                if int(sub_id) <= 10:
+                    # get GM:
+                    im_gm = im_ml.copy()
+                    im_gm.data[im_gm.data == 2] = 0
+                    im_gm.setFileName(path_data + '/' + sub + '/' + contrast + '/' + fname_gm)
+                    im_gm.save()
+                    # get SC
+                    im_sc = im_ml.copy()
+                    im_sc.data[im_sc.data > 0] = 1
+                    im_sc.setFileName(path_data + '/' + sub + '/' + contrast + '/' + fname_sc)
+                    im_sc.save()
+                # GM = 1, WM = 2
+                elif int(sub_id) > 10:
+                    # get GM:
+                    im_gm = im_ml.copy()
+                    im_gm.data[im_gm.data == 1] = 0
+                    im_gm.data[im_gm.data == 2] = 1
+                    im_gm.setFileName(path_data + '/' + sub + '/' + contrast + '/' + fname_gm)
+                    im_gm.save()
+                    # get SC
+                    im_sc = im_ml.copy()
+                    im_sc.data[im_sc.data > 0] = 1
+                    im_sc.setFileName(path_data + '/' + sub + '/' + contrast + '/' + fname_sc)
+                    im_sc.save()
 
 
 # Return a list of random images and segmentation of a given folder
@@ -550,23 +555,27 @@ def crop_segmentation(fname, fname_seg, v, fname_GM):
 # ==========================================================================================
 def worker_resized_and_crop(argument):
 
-    fname, fname_seg, v, fname_GM = argument
+    fname, fname_seg, v, fname_GM, folder_path, size_px, size_py = argument
+    fname = folder_path + '/' + fname
+    fname_seg = folder_path + '/' + fname_seg
+    fname_GM = folder_path + '/' + fname_GM
+
     # resample data to 1x1x1 mm^3
     try:
+
         nx, ny, nz, nt, px, py, pz, pt = Image(fname).dim
-        print "im -->  px : " + str(px) + "py : " + str(py) + "pz : " + str(pz)
-        if not (px == 1 and py == 1 and pz ==1):
-            sct.run('sct_resample -i ' + fname + ' -mm 1x1x1 -x nn -o ' + fname, verbose=v)
+        if px != size_px or py != size_py:
+            sct.run('sct_resample -i ' + fname + ' -mm ' + str(size_px) + 'x' + str(size_py) + 'x' + str(pz) + ' -x nn -o ' + fname, verbose=v)
         nx_s ,ny_s, nz_s, nt_s, px_s, py_s, pz_s, pt_s = Image(fname_seg).dim
-        print "im seg -->  px : " + str(px) + "py : " + str(py) + "pz : " + str(pz)
-        if not (px_s == 1 and py_s == 1 and pz_s == 1):
-            sct.run('sct_resample -i ' + fname_seg + ' -mm 1x1x1 -x nn -o ' + fname_seg, verbose=v)
+        if px_s != size_px or py_s != size_py:
+            sct.run('sct_resample -i ' + fname_seg + ' -mm ' + str(size_px) + 'x' + str(size_py) + 'x' + str(pz_s) + ' -x nn -o ' + fname_seg, verbose=v)
         if fname_GM :
             nx_g, ny_g, nz_g, nt_g, px_g, py_g, pz_g, pt_g = Image(fname_GM).dim
-            print "im GM -->  px : " + str(px) + "py : " + str(py) + "pz : " + str(pz)
-            if not (px_g == 1 and py_g == 1 and pz_g == 1):
-                sct.run('sct_resample -i ' + fname_GM + ' -mm 1x1x1 -x nn -o ' + fname_GM, verbose=v)
+            if px_g != size_px or py_g != size_py:
+                sct.run('sct_resample -i ' + fname_GM + ' -mm ' + str(size_px) + 'x' + str(size_py) + 'x' + str(pz_g) + ' -x nn -o ' + fname_GM, verbose=v)
 
+        sct.run('sct_image  -i ' + fname + ' -copy-header ' + fname_seg)
+        sct.run('sct_image  -i ' + fname + ' -copy-header ' + fname_GM)
             # change the orientation to RPI
         #from sct_image import get_orientation_3d
         #if not get_orientation_3d(Image(fname)) == 'RPI':
@@ -574,10 +583,10 @@ def worker_resized_and_crop(argument):
         #    sct.run("sct_image -i " + fname_seg + " -setorient RPI -o " + fname_seg, verbose=v)
         #    if fname_GM:
         #        sct.run("sct_image -i " + fname_GM + " -setorient RPI -o " + fname_GM, verbose=v)
-        #if fname_GM:
-        #    crop_segmentation(fname, fname_seg, v, fname_GM)
-        #else:
-        #    crop_segmentation(fname, fname_seg, v, fname_GM = None)
+        if fname_GM:
+            crop_segmentation(fname, fname_seg, v, fname_GM)
+        else:
+            crop_segmentation(fname, fname_seg, v, fname_GM = None)
     except KeyboardInterrupt:
         return
     except Exception as e:
@@ -636,7 +645,7 @@ def worker_random_slice(arguments_worker):
         if not sct.check_folder_exist("Slices_" + str(dirs_name), verbose=0):
             os.makedirs("Slices_" + str(dirs_name))
         nx, ny, nz, nt, px, py, pz, pt = Image(fname).dim
-        nbre_im = random.randrange(1, nz - 1)
+        nbre_im = random.randrange(1, nz )
         im = "Slices_" + dirs_name + '/' + file + "_crop_" + str(nbre_im) + "_o0.nii.gz"
 
         if not os.path.isfile(im):
@@ -704,7 +713,7 @@ def random_slice(fname, fname_seg, fname_size_x, fname_size_y, folder_path,nbre_
         if not sct.check_folder_exist("Slices_" + dirs_name[iter], verbose = 0):
             os.makedirs("Slices_" + dirs_name[iter])
         nx, ny, nz, nt, px, py, pz, pt = Image(fname[iter]).dim
-        nbre = random.randrange(1, nz - 1)
+        nbre = random.randrange(1, nz )
         im = "Slices_" + dirs_name[iter] + '/' + file + "_crop_" + str(nbre) + "_o0.nii.gz"
         if not os.path.isfile(im):
             current_path = os.getcwd()
@@ -847,9 +856,6 @@ def worker_apply_warping_field(argument):
     pos_crop_src = src_file.find('_crop')
     dest_path, dest_file, dest_ext = sct.extract_fname(dest)
     pos_crop_dest = dest_file.find('_crop')
-    print "im : " + str(im)
-    print "im seg: " + str(im_seg)
-    print "im GM : " + str(im_GM)
 
     for iter in range(0, nbre_slice):
         im_path, im_file, im_ext = sct.extract_fname(im[j+iter])
