@@ -115,6 +115,12 @@ def main():
                       mandatory=False,
                       default_value='0',
                       example=['0','1'])
+    parser.add_option(name="-preprocess",
+                      type_value="multiple_choice",
+                      description=" ",
+                      mandatory=False,
+                      default_value='0',
+                      example=['0', '1'])
 
     # get argument
     arguments = parser.parse(sys.argv[1:])
@@ -146,45 +152,55 @@ def main():
         all_slices = int(arguments['-all-slices'])
     if '-center-seg' in arguments:
         center_seg = int(arguments['-center-seg'])
+    if '-preprocess' in arguments:
+        preprocess = int(arguments['-preprocess'])
 
     # create a folder with all the images
-    list_data, dirs_name = extract_name_list(folder_path, GM)
+    list_data, dirs_name = extract_name_list(folder_path, GM, preprocess)
 
 
     # resample data to 1x1x1 mm^3 and crop them along the segmentation
-    start_time = time.time()
-    if GM:
-        arguments = [(list_data[iter*3], list_data[iter*3+1], v, list_data[iter*3+2], folder_path, dim_list[2], dim_list[3]) for iter in range(0, len(list_data)/3)]
-    else:
-        arguments = [(list_data[iter * 2], list_data[iter * 2 + 1], v, list_data[iter] * 2 + 1, folder_path, dim_list[2], dim_list[3]) for iter in range(0, len(list_data) / 2)]
+    if preprocess:
+        start_time = time.time()
+        from sct_image import get_orientation_3d
+        for i in range(0, len(list_data)):
+            print str(get_orientation_3d(Image(folder_path + '/' + list_data[i])))
+            if not get_orientation_3d(Image(folder_path + '/' + list_data[i])) == "RPI" :
+                sct.run("sct_image -i " + folder_path + '/' + list_data[i] + " -setorient RPI -o " + folder_path + '/' + list_data[i], verbose=v)
+                print "change orient"
 
-    if cpu_number != 0:
-        pool = Pool(cpu_number)
-        pool.map_async(worker_resized_and_crop, arguments)
-        try:
-            pool.close()
-            pool.join()
-        except KeyboardInterrupt:
-            print "\nWarning: Caught KeyboardInterrupt, terminating workers"
-            pool.terminate()
-            sys.exit(2)
-        except Exception as e:
-            print "Error during straightening on line {}".format(sys.exc_info()[-1].tb_lineno)
-            print e
-            sys.exit(2)
-    else:
         if GM:
-            for iter in range(0, len(list_data)/3):
-                arguments_src = (list_data[iter*3], list_data[iter*3+1], v, list_data[iter*3+2], folder_path, dim_list[2], dim_list[3])
-                worker_resized_and_crop(arguments_src)
+            arguments = [(list_data[iter*3], list_data[iter*3+1], v, list_data[iter*3+2], folder_path, dim_list[2], dim_list[3]) for iter in range(0, len(list_data)/3)]
         else:
-            for iter in range(0, len(list_data) / 2):
-                arguments_src = (list_data[iter * 2], list_data[iter * 2 + 1], v, list_data[iter * 2 + 2], folder_path, dim_list[2], dim_list[3])
-                worker_resized_and_crop(arguments_src)
+            arguments = [(list_data[iter * 2], list_data[iter * 2 + 1], v, list_data[iter] * 2 + 1, folder_path, dim_list[2], dim_list[3]) for iter in range(0, len(list_data) / 2)]
 
-    if verbose:
-        elapsed_time = time.time() - start_time
-        sct.printv('\nElapsed time to crop these images and resized them: ' + str(int(round(elapsed_time))) + 's')
+        if cpu_number != 0:
+            pool = Pool(cpu_number)
+            pool.map_async(worker_resized_and_crop, arguments)
+            try:
+                pool.close()
+                pool.join()
+            except KeyboardInterrupt:
+                print "\nWarning: Caught KeyboardInterrupt, terminating workers"
+                pool.terminate()
+                sys.exit(2)
+            except Exception as e:
+                print "Error during straightening on line {}".format(sys.exc_info()[-1].tb_lineno)
+                print e
+                sys.exit(2)
+        else:
+            if GM:
+                for iter in range(0, len(list_data)/3):
+                    arguments_src = (list_data[iter*3], list_data[iter*3+1], v, list_data[iter*3+2], folder_path, dim_list[2], dim_list[3])
+                    worker_resized_and_crop(arguments_src)
+            else:
+                for iter in range(0, len(list_data) / 2):
+                    arguments_src = (list_data[iter * 2], list_data[iter * 2 + 1], v, list_data[iter * 2 + 2], folder_path, dim_list[2], dim_list[3])
+                    worker_resized_and_crop(arguments_src)
+
+        if verbose:
+            elapsed_time = time.time() - start_time
+            sct.printv('\nElapsed time to crop these images and resized them: ' + str(int(round(elapsed_time))) + 's')
 
     # crop and slice all these images
     if all_slices == 1:
@@ -204,6 +220,7 @@ def main():
                     try:
                         pool = Pool(cpu_number)
                         pool.map(worker_slice_and_crop, arguments)
+                        print "OK"
                         pool.close()
                     except KeyboardInterrupt:
                         print "\nWarning: Caught KeyboardInterrupt, terminating workers"
@@ -369,7 +386,7 @@ def main():
         # Apply warping fields to random images
         start_time = time.time()
         if GM:
-            arguments = [(im, im_seg, src[iter], nbre_src[iter], dest[iter], nbre_dest[iter], nbre_slice, output_folder_path, warp[iter], nbre_im, iter * nbre_slice, v, im_GM) for iter in range(0, nbre_wrap)]
+            arguments = [(im, im_seg, src[iter], nbre_src[iter], dest[iter], nbre_dest[iter], nbre_slice, output_folder_path, warp[iter], nbre_im, iter * nbre_slice, v, im_GM, dirs_name_src[iter], dirs_name_dest[iter], dirs_name_im) for iter in range(0, nbre_wrap)]
         else:
             arguments = [(im, im_seg, src[iter], nbre_src[iter], dest[iter], nbre_dest[iter], nbre_slice, output_folder_path, warp[iter], nbre_im, iter*nbre_slice, v, None) for iter in range(0, nbre_wrap)]
         if cpu_number != 0:
@@ -379,10 +396,10 @@ def main():
             pool.join()
         else:
             if GM:
-                apply_warping_field(im, im_seg, src, dest, nbre_slice, nbre_wrap, output_folder_path, warp, nbre_im, v, im_GM)
+                apply_warping_field(im, im_seg, src, dest, nbre_slice, nbre_wrap, output_folder_path, warp, nbre_im, v, im_GM, dirs_name_src, dirs_name_dest, dirs_name_im)
 
             else:
-                apply_warping_field(im, im_seg, src, dest, nbre_slice, nbre_wrap, output_folder_path, warp, nbre_im, v, None)
+                apply_warping_field(im, im_seg, src, dest, nbre_slice, nbre_wrap, output_folder_path, warp, nbre_im, v, None, dirs_name_src, dirs_name_dest, dirs_name_im)
 
         if verbose :
             elapsed_time = time.time() - start_time
@@ -400,11 +417,10 @@ def main():
 
 # Extract a list of image, seg, and GM from the input directory
 # ==========================================================================================
-def extract_name_list(folder_path, GM):
+def extract_name_list(folder_path, GM, preprocess):
     list_data = []
     dirs_name = []
 
-    sum = 0
     if not GM:
         for root, dirs, files in os.walk(folder_path):
             for file in files:
@@ -415,14 +431,14 @@ def extract_name_list(folder_path, GM):
                     list_data.append(file)
                     list_data.append(file_seg)
 
-    change_name = False
     if GM:
         dirs_name = []
         for root, dirs, files in os.walk(folder_path):
             for dir in dirs:
                 if dir.find("t2s") == -1 and dir.find("t2") == -1 and dir.find("mt") == -1 and dir.find("dmri") == -1:
                     dirs_name.append(dir)
-        get_gmseg_from_multilabel(folder_path)
+        if preprocess:
+            get_gmseg_from_multilabel(folder_path)
         for iter, dir in enumerate(dirs_name):
             for root, dirs, files in os.walk(folder_path + '/' + dir):
                 for file in files:
@@ -433,15 +449,14 @@ def extract_name_list(folder_path, GM):
                         file_gmseg = dir + '/t2s/' + subject_name + '_gmseg_manual' + end_name
                         file = dir + '/t2s/' + file
                         list_data.append(file)
-                        nx, ny,nz, nt ,px, py, pz, pt = Image(folder_path + '/' + file).dim
-                        sum += nz
+                        # Get the number of total slices
+                        #nx, ny,nz, nt ,px, py, pz, pt = Image(folder_path + '/' + file).dim
+                        #sum += nz
                         list_data.append(file_seg)
                         list_data.append(file_gmseg)
-
-        print sum
     return list_data, dirs_name
 
-#
+# Extract the GM segmentation from the multilabeled one
 # ==========================================================================================
 def get_gmseg_from_multilabel(path):
     import os
@@ -458,6 +473,8 @@ def get_gmseg_from_multilabel(path):
         if os.path.isdir(path_data + '/'+ sub): # and sub.find(".DS_Store") == -1:
             if sub.find('challenge') != -1:
                 sub_id = sub.split('_')[1]
+                if sub.find('pain') != -1:
+                    sub_id = sub.split('_')[2]
                 # get multi-label image
                 im_ml = Image(path_data + '/' + sub + '/' + contrast + '/' + fname_multilabel)
                 # GM = 2, WM= 1
@@ -575,14 +592,9 @@ def worker_resized_and_crop(argument):
                 sct.run('sct_resample -i ' + fname_GM + ' -mm ' + str(size_px) + 'x' + str(size_py) + 'x' + str(pz_g) + ' -x nn -o ' + fname_GM, verbose=v)
 
         sct.run('sct_image  -i ' + fname + ' -copy-header ' + fname_seg)
-        sct.run('sct_image  -i ' + fname + ' -copy-header ' + fname_GM)
-            # change the orientation to RPI
-        #from sct_image import get_orientation_3d
-        #if not get_orientation_3d(Image(fname)) == 'RPI':
-        #    sct.run("sct_image -i " + fname + " -setorient RPI -o " + fname, verbose=v)
-        #    sct.run("sct_image -i " + fname_seg + " -setorient RPI -o " + fname_seg, verbose=v)
-        #    if fname_GM:
-        #        sct.run("sct_image -i " + fname_GM + " -setorient RPI -o " + fname_GM, verbose=v)
+        if fname_GM:
+            sct.run('sct_image  -i ' + fname + ' -copy-header ' + fname_GM)
+
         if fname_GM:
             crop_segmentation(fname, fname_seg, v, fname_GM)
         else:
@@ -831,14 +843,15 @@ def worker_warping_result(results):
 
 # Apply warping field
 # ==========================================================================================
-def apply_warping_field(im, im_seg, src, dest, nbre_slice, nbre_wrap,  output_folder_path, wrap, nbre_im, v, im_GM):
+def apply_warping_field(im, im_seg, src, dest, nbre_slice, nbre_wrap,  output_folder_path, wrap, nbre_im, v, im_GM, dirs_name_src, dirs_name_dest, dirs_name_im):
     for i in range(0, nbre_wrap):
         src_path, src_file, src_ext = sct.extract_fname(src[i])
         dest_path, dest_file, dest_ext = sct.extract_fname(dest[i])
         for iter in range(0, nbre_slice):
-            fname_out_im = src_file + '_' + dest_file + '_' + str(nbre_im[i*iter + iter]) + '.nii.gz'
-            fname_out_seg = src_file + '_' + dest_file + '_' + str(nbre_im[i*iter + iter]) + '_seg.nii.gz'
-            fname_out_GM = src_file + '_' + dest_file + '_' + str(nbre_im[i*iter + iter]) + '_gmseg.nii.gz'
+            im_path, im_file, im_ext = sct.extract_fname(im[i*iter +iter])
+            fname_out_im = dirs_name_src[i] + '_' + src_file + '_' + dirs_name_dest[i] + '_' + dest_file + '_' + dirs_name_im[i*iter +iter] + im_file + str(nbre_im[i*iter + iter]) + '.nii.gz'
+            fname_out_seg = dirs_name_src[i] + '_' + src_file + '_' + dirs_name_dest[i] + '_' + dest_file + '_' + dirs_name_im[i*iter +iter] + im_file + str(nbre_im[i*iter + iter]) + '_seg.nii.gz'
+            fname_out_GM = dirs_name_src[i] + '_' + src_file + '_' + dirs_name_dest[i] + '_' + dest_file + '_' + dirs_name_im[i*iter +iter] + im_file + str(nbre_im[i*iter + iter]) + '_gmseg.nii.gz'
             # Apply warping field to src data
             sct.run('isct_antsApplyTransforms -d 2 -i ' + im[i*iter + iter] + ' -r ' + dest[i] + ' -n Linear -t ' + wrap[i] + ' --output ' + output_folder_path + fname_out_im, verbose=v)
             sct.run('isct_antsApplyTransforms -d 2 -i ' + im_seg[i*iter + iter] + ' -r ' + dest[i] + ' -n Linear -t ' + wrap[i] + ' --output ' + output_folder_path + fname_out_seg, verbose=v)
@@ -850,7 +863,7 @@ def apply_warping_field(im, im_seg, src, dest, nbre_slice, nbre_wrap,  output_fo
 # Apply warping field
 # ==========================================================================================
 def worker_apply_warping_field(argument):
-    im, im_seg, src, nbre_src, dest, nbre_dest, nbre_slice, output_folder_path, wrap, nbre_im, j, v, im_GM = argument
+    im, im_seg, src, nbre_src, dest, nbre_dest, nbre_slice, output_folder_path, wrap, nbre_im, j, v, im_GM, dirs_name_src, dirs_name_dest, dirs_name_im = argument
 
     src_path, src_file, src_ext = sct.extract_fname(src)
     pos_crop_src = src_file.find('_crop')
@@ -860,14 +873,15 @@ def worker_apply_warping_field(argument):
     for iter in range(0, nbre_slice):
         im_path, im_file, im_ext = sct.extract_fname(im[j+iter])
         pos_crop_im = im_file.find('_crop')
-        fname_out_im = src_file[:pos_crop_src] + str(nbre_src) + '_' + dest_file[:pos_crop_dest] + str(nbre_dest) + '_' + im_file[:pos_crop_im] + str(nbre_im[j+iter]) + '.nii.gz'
-        fname_out_seg = src_file[:pos_crop_src] + str(nbre_src) + '_' + dest_file[:pos_crop_dest] + str(nbre_dest) + '_' + im_file[:pos_crop_im] + str(nbre_im[j+iter]) + '_seg.nii.gz'
-        fname_out_GM = src_file[:pos_crop_src] + str(nbre_src) + '_' + dest_file[:pos_crop_dest] + str(nbre_dest) + '_' + im_file[:pos_crop_im] + str(nbre_im[j+iter]) + '_gmseg.nii.gz'
+        fname_out_im = dirs_name_src + '_' + src_file[:pos_crop_src] + str(nbre_src) + '_' + dirs_name_dest + '_' +  dest_file[:pos_crop_dest] + str(nbre_dest) + '_' + dirs_name_im[j+iter] + '_' + im_file[:pos_crop_im] + str(nbre_im[j+iter]) + '.nii.gz'
+        fname_out_seg = dirs_name_src + '_' + src_file[:pos_crop_src] + str(nbre_src) + '_' + dirs_name_dest + '_' +  dest_file[:pos_crop_dest] + str(nbre_dest) + '_' + dirs_name_im[j+iter] + '_' + im_file[:pos_crop_im] + str(nbre_im[j+iter]) + '_seg.nii.gz'
+        fname_out_GM = dirs_name_src + '_' + src_file[:pos_crop_src] + str(nbre_src) + '_' + dirs_name_dest + '_' +  dest_file[:pos_crop_dest] + str(nbre_dest) + '_' + dirs_name_im[j+iter] + '_' + im_file[:pos_crop_im] + str(nbre_im[j+iter]) + '_gmseg.nii.gz'
         # Apply warping field to src data
-        sct.run('isct_antsApplyTransforms -d 2 -i ' + im[j+iter] + ' -r ' + dest + ' -n Linear -t ' + wrap + ' --output ' + output_folder_path + fname_out_im, verbose=1)
-        sct.run('isct_antsApplyTransforms -d 2 -i ' + im_seg[j+iter] + ' -r ' + dest + ' -n Linear -t ' + wrap + ' --output ' + output_folder_path + fname_out_seg, verbose=1)
-        if im_GM:
-            sct.run('isct_antsApplyTransforms -d 2 -i ' + im_GM[j + iter] + ' -r ' + dest + ' -n Linear -t ' + wrap + ' --output ' + output_folder_path + fname_out_GM, verbose=1)
+        if not os.path.isfile(fname_out_im):
+            sct.run('isct_antsApplyTransforms -d 2 -i ' + im[j+iter] + ' -r ' + dest + ' -n Linear -t ' + wrap + ' --output ' + output_folder_path + fname_out_im, verbose=1)
+            sct.run('isct_antsApplyTransforms -d 2 -i ' + im_seg[j+iter] + ' -r ' + dest + ' -n Linear -t ' + wrap + ' --output ' + output_folder_path + fname_out_seg, verbose=1)
+            if im_GM:
+                sct.run('isct_antsApplyTransforms -d 2 -i ' + im_GM[j + iter] + ' -r ' + dest + ' -n Linear -t ' + wrap + ' --output ' + output_folder_path + fname_out_GM, verbose=1)
 
 # START PROGRAM
 # ==========================================================================================

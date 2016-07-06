@@ -911,8 +911,6 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
     if fname_slice_GM:
         image_slice_GM = Image(fname_slice_GM)
         data_array_GM = np.squeeze(np.asarray(image_slice_GM.data))
-    lx_start = 0
-    lx_stop = 0
 
     nx_s, ny_s, nz_s, nt_s, px_s, py_s, pz_s, pt_s = Image(fname_slice_seg).dim
     if start_x < 1:
@@ -935,20 +933,21 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
     if start_y < 1:
         ly_start = round(abs(cofb[1] - fname_size_y/2)+1)
         z = np.zeros((np.shape(data_array)[0], ly_start))
+        zs = np.zeros((np.shape(data_array_seg)[0], ly_start))
         sct.printv(str(np.shape(z)))
         data_array = np.append(z, data_array, axis= 1)
-        data_array_seg = np.append(z, data_array_seg, axis=1)
+        data_array_seg = np.append(zs, data_array_seg, axis=1)
         if fname_slice_GM:
-            data_array_GM = np.append(z, data_array_GM, axis = 1)
+            data_array_GM = np.append(zs, data_array_GM, axis = 1)
         start_y = 0
     if stop_y >= ny:
         ly_stop = ceil(cofb[1] + fname_size_y/2 - ny)
-        z = np.zeros((nx + lx_start + lx_stop, ly_stop))
-        zs = np.zeros((nx_s + lx_start + lx_stop, ly_stop))
+        z = np.zeros((np.shape(data_array)[0], ly_stop))
+        zs = np.zeros((np.shape(data_array_seg)[0], ly_stop))
         data_array = np.append(data_array, z, axis=1)
         data_array_seg = np.append(data_array_seg, zs, axis=1)
         if fname_slice_GM:
-            data_array_GM = np.append(data_array_GM, z, axis=1)
+            data_array_GM = np.append(data_array_GM, zs, axis=1)
 
     path_out, file_out, ext_out = sct.extract_fname(output_name)
     fname_slice_out = path_out + file_out + "_slice_out" + ext_out
@@ -965,10 +964,10 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
     image_slice.save()
     image_slice_seg.save()
 
-    sct.run("sct_crop_image -i " + fname_slice_out + " -dim 0,1 -start " + str((start_x)) + "," + str(start_y) + " -end " + str(start_x +fname_size_x-1) + "," + str(start_y +fname_size_y-1) + " -o " + output_name, verbose=1)
-    sct.run("sct_crop_image -i " + fname_slice_seg_out + " -dim 0,1 -start " + str(start_x) + "," + str(start_y) + " -end " + str(start_x +fname_size_x-1) + "," + str(start_y +fname_size_y-1) + " -o " + output_name_seg, verbose=1)
+    sct.run("sct_crop_image -i " + fname_slice_out + " -dim 0,1 -start " + str(start_x+1) + "," + str(start_y+1) + " -end " + str(start_x +fname_size_x) + "," + str(start_y +fname_size_y) + " -o " + output_name, verbose=1)
+    sct.run("sct_crop_image -i " + fname_slice_seg_out + " -dim 0,1 -start " + str(start_x+1) + "," + str(start_y+1) + " -end " + str(start_x +fname_size_x) + "," + str(start_y +fname_size_y) + " -o " + output_name_seg, verbose=1)
     if fname_slice_GM:
-        sct.run("sct_crop_image -i " + fname_slice_GM_out + " -dim 0,1 -start " + str(start_x) + "," + str(start_y) + " -end " + str(start_x +fname_size_x-1) + "," + str(start_y +fname_size_y-1) + " -o " + output_GM, verbose=1)
+        sct.run("sct_crop_image -i " + fname_slice_GM_out + " -dim 0,1 -start " + str(start_x+1) + "," + str(start_y+1) + " -end " + str(start_x +fname_size_x) + "," + str(start_y +fname_size_y) + " -o " + output_GM, verbose=1)
 
     # get the curent folder
     # out the origine at (0,0)
@@ -990,11 +989,11 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
 
 
     # Delete temporary files
-    #sct.printv('\nRemove temporary files...')
-    #sct.run('rm -rf ' + path_out + file_out + "_slice_out" + ext_out, verbose=0)
-    #sct.run('rm -rf ' + path_out + '/' + file_out + "_slice_seg_out" + ext_out, verbose=0)
-    #if output_GM:
-    #    sct.run('rm -rf ' + path_out + file_out + "_slice_GM_out" + ext_out, verbose=0)
+    sct.printv('\nRemove temporary files...')
+    sct.run('rm -rf ' + path_out + file_out + "_slice_out" + ext_out, verbose=0)
+    sct.run('rm -rf ' + path_out + '/' + file_out + "_slice_seg_out" + ext_out, verbose=0)
+    if output_GM:
+        sct.run('rm -rf ' + path_out + file_out + "_slice_GM_out" + ext_out, verbose=0)
 
 
 # =======================================================================================================================
