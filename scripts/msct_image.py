@@ -892,10 +892,10 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
         cofb =np.zeros(2)
         sens_list = [-1, 1]
         sens = random.randrange(0,2)
-        translation_x = random.randrange(0,max(10,min(int(cof[0]-fname_size_x/2), int(nx - cof[0]+fname_size_x/2))))
+        translation_x = random.randrange(20,max(21,min(int(cof[0]-fname_size_x/2), int(nx - cof[0]+fname_size_x/2))-1))
         cofb[0] = cof[0] + sens_list[sens] * translation_x
         sens = random.randrange(0, 1)
-        translation_y = random.randrange(0, max(10,min(int(cof[1]-fname_size_y/2), int(ny - cof[1]+fname_size_y/2))))
+        translation_y = random.randrange(20, max(21,min(int(cof[1]-fname_size_y/2), int(ny - cof[1]+fname_size_y/2))-1))
         cofb[1] = cof[1] + sens_list[sens] * translation_y
 
     # crop the image along the x,y direction
@@ -923,7 +923,7 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
             data_array_GM = np.append(zs, data_array_GM, axis=0)
         start_x = 0
     if stop_x >= nx:
-        lx_stop = ceil(cofb[0] + fname_size_x/2 - nx)
+        lx_stop = ceil(cofb[0] + fname_size_x/2 - nx + 1)
         z = np.zeros((lx_stop, ny))
         zs = np.zeros((lx_stop, ny_s))
         data_array = np.append(data_array, z, axis=0)
@@ -941,7 +941,7 @@ def crop_x_y (fname_slice, fname_slice_seg, fname_size_x, fname_size_y, output_n
             data_array_GM = np.append(zs, data_array_GM, axis = 1)
         start_y = 0
     if stop_y >= ny:
-        ly_stop = ceil(cofb[1] + fname_size_y/2 - ny)
+        ly_stop = ceil(cofb[1] + fname_size_y/2 - ny + 1)
         z = np.zeros((np.shape(data_array)[0], ly_stop))
         zs = np.zeros((np.shape(data_array_seg)[0], ly_stop))
         data_array = np.append(data_array, z, axis=1)
