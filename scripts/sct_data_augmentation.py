@@ -158,7 +158,7 @@ def main():
     # create a folder with all the images
     list_data, dirs_name = extract_name_list(folder_path, GM, preprocess)
 
-    from sct_data_augmentation_vertebres import extract_label_list
+    from sct_data_augmentation_vertebra import extract_label_list
 
     list_image_labels, data_list, dirs_name = extract_label_list(folder_path, list_data, dirs_name)
 
@@ -173,7 +173,7 @@ def main():
     if all_slices == 1:
 
         if not GM :
-            for iter in range(0,len(list_data) / 2 - 1):
+            for iter in range(0,len(list_data) / 2 ):
                 path, file, ext = sct.extract_fname(str(list_data[iter * 2]))
 
                 # get the number of the slice in the source image and crop it
