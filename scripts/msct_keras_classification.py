@@ -291,13 +291,10 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
             tick = time.time()
             y_pred = model.predict(X_test, batch_size=32)
             cls_stats['prediction_time'] += time.time() - tick
-            print len(np.argmax(y_pred, axis=1).tolist())
             y_pred_sk.extend(np.argmax(y_pred, axis=1).tolist())
             y_test_sk.extend(y_test)
-            print len(y_pred_sk), len(y_test_sk)
         y_test_sk = np.array(y_test_sk)
         y_pred_sk = np.array(y_pred_sk)
-        print y_test_sk.shape, y_pred_sk.shape
         cls_stats['accuracy'] = accuracy_score(y_test_sk, y_pred_sk)
         cls_stats['precision'] = precision_score(y_test_sk, y_pred_sk)
         cls_stats['recall'] = recall_score(y_test_sk, y_pred_sk)
