@@ -282,6 +282,7 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
 
     if i % evaluation_factor == 0:
         print 'Iteration', i
+        print '~' + str(cls_stats['n_train']*test_ratio/test_stats['n_test']) + ' epoch(s)'
         cls_stats['prediction_time'] = 0
         y_pred_sk, y_test_sk = [], []
         data_stream_test = stream_images(list_test_data, patch_size, max_patches_factor, 1)
