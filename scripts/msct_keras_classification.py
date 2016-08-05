@@ -296,10 +296,11 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
             y_test_sk.append([np.argmax(c) for c in y_test])
         y_test_sk = np.array(y_test_sk)
         y_pred_sk = np.array(y_pred_sk)
-        cls_stats['accuracy'] += accuracy_score(y_test_sk, y_pred_sk)
-        cls_stats['precision'] += precision_score(y_test_sk, y_pred_sk)
-        cls_stats['recall'] += recall_score(y_test_sk, y_pred_sk)
-        cls_stats['fscore'] += f1_score(y_test_sk, y_pred_sk)
+        print y_test_sk.shape, y_pred_sk.shape
+        cls_stats['accuracy'] = accuracy_score(y_test_sk, y_pred_sk)
+        cls_stats['precision'] = precision_score(y_test_sk, y_pred_sk)
+        cls_stats['recall'] = recall_score(y_test_sk, y_pred_sk)
+        cls_stats['fscore'] = f1_score(y_test_sk, y_pred_sk)
 
         acc_history = (cls_stats['accuracy'],
                        cls_stats['n_train'])
