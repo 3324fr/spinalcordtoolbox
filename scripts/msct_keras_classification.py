@@ -292,8 +292,8 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
             y_pred = model.predict(X_test, batch_size=32)
             cls_stats['prediction_time'] += time.time() - tick
             print len(np.argmax(y_pred, axis=1).tolist())
-            y_pred_sk.append(np.argmax(y_pred, axis=1).tolist())
-            y_test_sk.append(y_test)
+            y_pred_sk.extend(np.argmax(y_pred, axis=1).tolist())
+            y_test_sk.extend(y_test)
             print len(y_pred_sk), len(y_test_sk)
         y_test_sk = np.array(y_test_sk)
         y_pred_sk = np.array(y_pred_sk)
