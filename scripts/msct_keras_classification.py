@@ -286,16 +286,15 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
         data_stream_test = stream_images(list_test_data, patch_size, max_patches_factor, 1)
         minibatch_iterator_test = iter_minibatches(data_stream_test, minibatch_size)
         for j, (X_test, y_test) in enumerate(minibatch_iterator_test):
-            y_test = np_utils.to_categorical(y_test)
 
             # accumulate test accuracy stats
             tick = time.time()
             y_pred = model.predict(X_test, batch_size=32)
             print y_pred.shape
             cls_stats['prediction_time'] += time.time() - tick
-            y_pred_sk.append([np.argmax(c) for c in y_pred])
+            y_pred_sk.append([np.argmax(y_pred[c, :]) for c in range(y_pred.shape[0])])
             print len(y_pred_sk)
-            y_test_sk.append([np.argmax(c) for c in y_test])
+            y_test_sk.append(y_test)
         y_test_sk = np.array(y_test_sk)
         y_pred_sk = np.array(y_pred_sk)
         print y_test_sk.shape, y_pred_sk.shape
