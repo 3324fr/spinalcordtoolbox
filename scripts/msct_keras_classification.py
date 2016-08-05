@@ -281,29 +281,23 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
     cls_stats['n_train_pos'] += sum(y_train)
 
     if i % evaluation_factor == 0:
-        cls_stats['accuracy'] = 0
-        cls_stats['precision'] = 0
-        cls_stats['recall'] = 0
-        cls_stats['fscore'] = 0
         cls_stats['prediction_time'] = 0
+        y_pred_sk, y_test_sk = [], []
         data_stream_test = stream_images(list_test_data, patch_size, max_patches_factor, 1)
         minibatch_iterator_test = iter_minibatches(data_stream_test, minibatch_size)
-        nb_test = 0
         for j, (X_test, y_test) in enumerate(minibatch_iterator_test):
             y_test = np_utils.to_categorical(y_test)
-            nb_test += len(y_test)
 
             # accumulate test accuracy stats
             tick = time.time()
             y_pred = model.predict(X_test, batch_size=32)
             cls_stats['prediction_time'] += time.time() - tick
-            y_pred_sk = [round(c[1]) for c in y_pred]
-            y_test_sk = [round(c[1]) for c in y_test]
-            cls_stats['accuracy'] += accuracy_score(y_test_sk, y_pred_sk)
-            cls_stats['precision'] += precision_score(y_test_sk, y_pred_sk)
-            cls_stats['recall'] += recall_score(y_test_sk, y_pred_sk)
-            cls_stats['fscore'] += f1_score(y_test_sk, y_pred_sk)
-        print nb_test
+            y_pred_sk.append([np.argmax(c) for c in y_pred])
+            y_test_sk.append([np.argmax(c) for c in y_test])
+        cls_stats['accuracy'] += accuracy_score(y_test_sk, y_pred_sk)
+        cls_stats['precision'] += precision_score(y_test_sk, y_pred_sk)
+        cls_stats['recall'] += recall_score(y_test_sk, y_pred_sk)
+        cls_stats['fscore'] += f1_score(y_test_sk, y_pred_sk)
 
         acc_history = (cls_stats['accuracy'],
                        cls_stats['n_train'])
