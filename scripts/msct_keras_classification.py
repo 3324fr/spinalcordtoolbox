@@ -24,12 +24,13 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from sklearn.feature_extraction.image import extract_patches_2d
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+try:
+    import cPickle as pickle
+except:
+    import pickle
 
-
-# import numpy and pandas for array manipulationa and csv files
+# import numpy
 import numpy as np
-import pandas as pd
-
 
 # import keras necessary classes
 from keras.models import Sequential
@@ -93,7 +94,8 @@ def extract_list_file_from_path(path_data):
 
 def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
     for e in range(nb_epochs):
-        print 'Epoch ' + str(e + 1) + '/' + str(nb_epochs)
+        if nb_epochs != 1:
+            print 'Epoch ' + str(e + 1) + '/' + str(nb_epochs)
         for i, fname in enumerate(list_data):
             data_im, data_seg = extract_slices_from_image(list_data[i][0], list_data[i][1])
             number_of_slices = len(data_im)
@@ -109,6 +111,7 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
                     patch_seg = patches[j, :, :, 1]
 
                     result = {}
+                    result['epoch'] = e+1
                     result['patch'] = patch_im
                     if patch_seg[int(patch_size / 2), int(patch_size / 2)] == 1:
                         result['class'] = 1
@@ -147,9 +150,10 @@ print('creating the model')
 
 patch_size = 32
 test_ratio = 0.2
-nb_epochs = 100
+nb_epochs = 500
 minibatch_size = 10000
 max_patches_factor = 10
+evaluation_factor = 1000
 
 
 def modelA():
@@ -236,8 +240,6 @@ print("Test set is %d patches (%d positive)" % (test_stats['n_test'], test_stats
 minibatch_iterators = iter_minibatches(data_stream_train, minibatch_size)
 total_vect_time = 0.0
 
-evaluation_factor = 500
-
 stats = {'n_train': 0, 'n_train_pos': 0,
          'accuracy': 0.0, 'precision': 0.0, 'recall': 0.0, 'fscore': 0.0,
          'accuracy_history': [(0, 0)], 'precision_history': [(0, 0)], 'recall_history': [(0, 0)],
@@ -249,20 +251,18 @@ cls_stats = stats
 def progress(stats):
     """Report progress information, return a string."""
     duration = time.time() - stats['t0']
-    s = str(stats['n_train']) + " train docs (" + str(stats['n_train_pos']) + " positive)\n"
-    s += str(test_stats['n_test']) + " test docs (" + str(test_stats['n_test_pos']) + " positive)\n"
+    s = str(stats['n_train']) + " train samples (" + str(stats['n_train_pos']) + " positive)\n"
+    s += str(test_stats['n_test']) + " test samples (" + str(test_stats['n_test_pos']) + " positive)\n"
     s += "accuracy: " + str(stats['accuracy']) + "\n"
     s += "precision: " + str(stats['precision']) + "\n"
     s += "recall: " + str(stats['recall']) + "\n"
     s += "fscore: " + str(stats['fscore']) + "\n"
-    s += "in " + str(duration) + "s (" + str(stats['n_train'] / duration) + " docs/s)"
+    s += "in " + str(duration) + "s (" + str(stats['n_train'] / duration) + " samples/sec)"
     return s
 
 # Main loop : iterate on mini-batchs of examples
 print 'start training'
 for i, (X_train, y_train) in enumerate(minibatch_iterators):
-    print 'Iteration', i
-
     number_of_positive = sum(y_train)
     if number_of_positive == 0:
         print 'No positive sample...'
@@ -281,6 +281,7 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
     cls_stats['n_train_pos'] += sum(y_train)
 
     if i % evaluation_factor == 0:
+        print 'Iteration', i
         cls_stats['prediction_time'] = 0
         y_pred_sk, y_test_sk = [], []
         data_stream_test = stream_images(list_test_data, patch_size, max_patches_factor, 1)
@@ -316,6 +317,12 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
                        total_vect_time + cls_stats['total_fit_time'])
         cls_stats['runtime_history'].append(run_history)
 
+        pickle.dump(cls_stats, open("/home/neuropoly/data/cnn_results_it"+str(i)+".p", "wb"))
+        model.save('/home/neuropoly/data/model_cnn_it'+str(i)+'.h5')
+
         print(progress(cls_stats))
         print('\n')
+
+pickle.dump(cls_stats, open("/home/neuropoly/data/cnn_results.p", "wb"))
+model.save('/home/neuropoly/data/model_cnn.h5')
 
