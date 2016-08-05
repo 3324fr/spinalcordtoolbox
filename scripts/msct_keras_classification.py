@@ -290,11 +290,10 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
             # accumulate test accuracy stats
             tick = time.time()
             y_pred = model.predict(X_test, batch_size=32)
-            print y_pred.shape
             cls_stats['prediction_time'] += time.time() - tick
-            y_pred_sk = np.argmax(y_pred, axis=0)
-            print y_pred_sk.shape
+            y_pred_sk.append(np.argmax(y_pred, axis=1).tolist())
             y_test_sk.append(y_test)
+            print len(y_pred_sk), len(y_test_sk)
         y_test_sk = np.array(y_test_sk)
         y_pred_sk = np.array(y_pred_sk)
         print y_test_sk.shape, y_pred_sk.shape
