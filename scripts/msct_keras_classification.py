@@ -236,7 +236,7 @@ print("Test set is %d patches (%d positive)" % (test_stats['n_test'], test_stats
 minibatch_iterators = iter_minibatches(data_stream_train, minibatch_size)
 total_vect_time = 0.0
 
-evaluation_factor = 1
+evaluation_factor = 50
 
 stats = {'n_train': 0, 'n_train_pos': 0,
          'accuracy': 0.0, 'precision': 0.0, 'recall': 0.0, 'fscore': 0.0,
