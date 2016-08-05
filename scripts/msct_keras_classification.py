@@ -3,6 +3,8 @@
 #
 # This module contains some functions and algorithm for image classification and segmentation
 # using supervised machine learning
+# GPU run command:
+#    THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python msct_keras_classification.py
 #
 # ---------------------------------------------------------------------------------------
 # Copyright (c) 2016 Polytechnique Montreal <www.neuro.polymtl.ca>
@@ -89,40 +91,30 @@ def extract_list_file_from_path(path_data):
     return list_data
 
 
-def stream_images():
-    list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/small')
-    print 'Number of images:', len(list_data)
+def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
+    for e in range(nb_epochs):
+        print 'Epoch ' + str(e + 1) + '/' + str(nb_epochs)
+        for i, fname in enumerate(list_data):
+            data_im, data_seg = extract_slices_from_image(list_data[i][0], list_data[i][1])
+            number_of_slices = len(data_im)
 
-    patch_size = 32
-    max_patches_factor = 100
+            arr = range(number_of_slices)
+            np.random.shuffle(arr)
+            for k in arr:
+                patches = extract_patch_from_slice(data_im[k], data_seg[k], patch_size, max_patches_factor)
+                number_of_patches = patches.shape[0]
+                # print k, number_of_slices, number_of_patches
+                for j in range(number_of_patches):
+                    patch_im = patches[j, :, :, 0]
+                    patch_seg = patches[j, :, :, 1]
 
-    np.random.shuffle(list_data)
-
-    for i, fname in enumerate(list_data):
-        data_im, data_seg = extract_slices_from_image(list_data[i][0], list_data[i][1])
-        number_of_slices = len(data_im)
-
-        arr = range(number_of_slices)
-        np.random.shuffle(arr)
-        for k in arr:
-            #plt.figure()
-            #plt.imshow(data_im[k])
-            #plt.show()
-
-            patches = extract_patch_from_slice(data_im[k], data_seg[k], patch_size, max_patches_factor)
-            number_of_patches = patches.shape[0]
-            # print k, number_of_slices, number_of_patches
-            for j in range(number_of_patches):
-                patch_im = patches[j, :, :, 0]
-                patch_seg = patches[j, :, :, 1]
-
-                result = {}
-                result['patch'] = patch_im
-                if patch_seg[int(patch_size / 2), int(patch_size / 2)] == 1:
-                    result['class'] = 1
-                else:
-                    result['class'] = 0
-                yield result
+                    result = {}
+                    result['patch'] = patch_im
+                    if patch_seg[int(patch_size / 2), int(patch_size / 2)] == 1:
+                        result['class'] = 1
+                    else:
+                        result['class'] = 0
+                    yield result
 
 
 def get_minibatch(patch_iter, size):
@@ -137,8 +129,9 @@ def get_minibatch(patch_iter, size):
 
     X, y = zip(*data)
     X, y = np.asarray(X, dtype=int), np.asarray(y, dtype=int)
-    X = X.reshape(size, 1, X.shape[1], X.shape[2])
+    X = X.reshape(X.shape[0], 1, X.shape[1], X.shape[2])
     return X, y
+
 
 def iter_minibatches(patch_iter, minibatch_size):
     """Generator of minibatches."""
@@ -153,6 +146,11 @@ def iter_minibatches(patch_iter, minibatch_size):
 print('creating the model')
 
 patch_size = 32
+test_ratio = 0.2
+nb_epochs = 10
+minibatch_size = 10000
+max_patches_factor = 50
+
 
 def modelA():
     model = Sequential()
@@ -210,39 +208,35 @@ def modelB():
 
 model = modelB()
 
-data_stream = stream_images()
+list_data = extract_list_file_from_path('/home/neuropoly/data/small')
+np.random.shuffle(list_data)
+nb_images = len(list_data)
+nb_test = int(round(test_ratio * nb_images))
+nb_train = nb_images - nb_test
+list_test_data = list_data[:nb_test]
+list_train_data = list_data[nb_test:]
+print 'Number of images', nb_images
+print 'Number of test images=', len(list_test_data)
+print 'Number of train images=', len(list_train_data)
+
+data_stream_test = stream_images(list_test_data, patch_size, max_patches_factor, 1)
+data_stream_train = stream_images(list_train_data, patch_size, max_patches_factor, nb_epochs)
 
 # test data statistics
 test_stats = {'n_test': 0, 'n_test_pos': 0}
 
 # First we hold out a number of examples to estimate accuracy
-n_test_documents = 100000
-tick = time.time()
-X_test, y_test = get_minibatch(data_stream, n_test_documents)
-parsing_time = time.time() - tick
-tick = time.time()
-#X_test = vectorizer.transform(X_test_text)
-vectorizing_time = time.time() - tick
-test_stats['n_test'] += len(y_test)
-test_stats['n_test_pos'] += sum(y_test)
-print("Test set is %d documents (%d positive)" % (len(y_test), sum(y_test)))
+minibatch_iterator_test = iter_minibatches(data_stream_test, minibatch_size)
+for i, (X_test, y_test) in enumerate(minibatch_iterator_test):
+    test_stats['n_test'] += len(y_test)
+    test_stats['n_test_pos'] += sum(y_test)
+print("Test set is %d patches (%d positive)" % (test_stats['n_test'], test_stats['n_test_pos']))
 
-y_test = np_utils.to_categorical(y_test)
 
-get_minibatch(data_stream, n_test_documents)
-# Discard test set
-
-# We will feed the classifier with mini-batches of 1000 documents; this means
-# we have at most 1000 docs in memory at any time.  The smaller the document
-# batch, the bigger the relative overhead of the partial fit methods.
-minibatch_size = 10000
-
-# Create the data_stream that parses Reuters SGML files and iterates on
-# documents as a stream.
-minibatch_iterators = iter_minibatches(data_stream, minibatch_size)
+minibatch_iterators = iter_minibatches(data_stream_train, minibatch_size)
 total_vect_time = 0.0
 
-evaluation_factor = 50
+evaluation_factor = 1
 
 stats = {'n_train': 0, 'n_train_pos': 0,
          'accuracy': 0.0, 'precision': 0.0, 'recall': 0.0, 'fscore': 0.0,
@@ -272,11 +266,7 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
     number_of_positive = sum(y_train)
     if number_of_positive == 0:
         print 'No positive sample...'
-        pass
-
-    tick = time.time()
-    #X_train = vectorizer.transform(X_train_text)
-    total_vect_time += time.time() - tick
+        continue
 
     weight_class = [sum(y_train) / float(len(y_train)), 1.0]
     #sample_weights = [weight_class[sample_class] for sample_class in y_train]
@@ -286,22 +276,30 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
     # update estimator with examples in the current mini-batch
     y_train = np_utils.to_categorical(y_train)
     model.train_on_batch(X_train, y_train, class_weight=weight_class)
-
+    cls_stats['total_fit_time'] += time.time() - tick
     cls_stats['n_train'] += X_train.shape[0]
     cls_stats['n_train_pos'] += sum(y_train)
 
     if i % evaluation_factor == 0:
-        # accumulate test accuracy stats
-        cls_stats['total_fit_time'] += time.time() - tick
-        tick = time.time()
-        y_pred = model.predict(X_test, batch_size=32)
-        y_pred_sk = [c[1] for c in y_pred]
-        y_test_sk = [c[1] for c in y_test]
-        cls_stats['accuracy'] = accuracy_score(y_test_sk, y_pred_sk)
-        cls_stats['precision'] = precision_score(y_test_sk, y_pred_sk)
-        cls_stats['recall'] = recall_score(y_test_sk, y_pred_sk)
-        cls_stats['fscore'] = f1_score(y_test_sk, y_pred_sk)
-        cls_stats['prediction_time'] = time.time() - tick
+        cls_stats['accuracy'] = 0
+        cls_stats['precision'] = 0
+        cls_stats['recall'] = 0
+        cls_stats['fscore'] = 0
+        cls_stats['prediction_time'] = 0
+        for j, (X_test, y_test) in enumerate(minibatch_iterator_test):
+            y_test = np_utils.to_categorical(y_test)
+
+            # accumulate test accuracy stats
+            tick = time.time()
+            y_pred = model.predict(X_test, batch_size=32)
+            cls_stats['prediction_time'] += time.time() - tick
+            y_pred_sk = [round(c[1]) for c in y_pred]
+            y_test_sk = [round(c[1]) for c in y_test]
+            cls_stats['accuracy'] += accuracy_score(y_test_sk, y_pred_sk)
+            cls_stats['precision'] += precision_score(y_test_sk, y_pred_sk)
+            cls_stats['recall'] += recall_score(y_test_sk, y_pred_sk)
+            cls_stats['fscore'] += f1_score(y_test_sk, y_pred_sk)
+
         acc_history = (cls_stats['accuracy'],
                        cls_stats['n_train'])
         cls_stats['accuracy_history'].append(acc_history)
