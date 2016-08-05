@@ -286,6 +286,7 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
         cls_stats['recall'] = 0
         cls_stats['fscore'] = 0
         cls_stats['prediction_time'] = 0
+        minibatch_iterator_test = iter_minibatches(data_stream_test, minibatch_size)
         for j, (X_test, y_test) in enumerate(minibatch_iterator_test):
             y_test = np_utils.to_categorical(y_test)
 
