@@ -287,8 +287,10 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
         cls_stats['fscore'] = 0
         cls_stats['prediction_time'] = 0
         minibatch_iterator_test = iter_minibatches(data_stream_test, minibatch_size)
+        nb_test = 0
         for j, (X_test, y_test) in enumerate(minibatch_iterator_test):
             y_test = np_utils.to_categorical(y_test)
+            nb_test += len(y_test)
 
             # accumulate test accuracy stats
             tick = time.time()
@@ -300,6 +302,7 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
             cls_stats['precision'] += precision_score(y_test_sk, y_pred_sk)
             cls_stats['recall'] += recall_score(y_test_sk, y_pred_sk)
             cls_stats['fscore'] += f1_score(y_test_sk, y_pred_sk)
+        print nb_test
 
         acc_history = (cls_stats['accuracy'],
                        cls_stats['n_train'])
