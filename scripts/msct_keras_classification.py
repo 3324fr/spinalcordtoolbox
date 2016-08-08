@@ -215,7 +215,7 @@ def modelB():
 
 model = modelB()
 
-list_data = extract_list_file_from_path('/home/neuropoly/data/small')
+list_data = extract_list_file_from_path('/home/neuropoly/data/large_nobrain')
 np.random.shuffle(list_data)
 nb_images = len(list_data)
 nb_test = int(round(test_ratio * nb_images))
@@ -321,8 +321,8 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
                        total_vect_time + cls_stats['total_fit_time'])
         cls_stats['runtime_history'].append(run_history)
 
-        pickle.dump(cls_stats, open("/home/neuropoly/data/cnn_results_it"+str(i)+".p", "wb"))
-        model.save('/home/neuropoly/data/model_cnn_it'+str(i)+'.h5')
+        pickle.dump(cls_stats, open("/home/neuropoly/data/results_small/cnn_results_it"+str(i)+".p", "wb"))
+        model.save('/home/neuropoly/data/results_small/model_cnn_it'+str(i)+'.h5')
 
         print(progress(cls_stats))
         print('\n')
