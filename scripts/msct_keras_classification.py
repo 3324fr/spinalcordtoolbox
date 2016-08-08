@@ -108,7 +108,7 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
                 normalized_slice = (data_im[k] - np.mean(data_im[k])) / np.abs(np.percentile(data_im[k], 1) - np.percentile(data_im[k], 99))
                 #print normalized_slice.shape, data_seg[k].shape
 
-                patches = extract_patch_from_slice(normalized_slice, data_seg[k], patch_size, max_patches_factor)
+                patches = extract_patch_from_slice(data_im[k], data_seg[k], patch_size, max_patches_factor)
                 number_of_patches = patches.shape[0]
                 # print k, number_of_slices, number_of_patches
                 for j in range(number_of_patches):
