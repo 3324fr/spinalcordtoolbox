@@ -58,6 +58,20 @@ def extract_slices_from_image(fname_im, fname_seg=None):
     else:
         return data_im
 
+def extract_all_positive_patches_from_slice(slice_im, slice_seg, patch_size=32):
+    data_to_patch = np.stack((slice_im, slice_seg), axis=2)
+    indices_positive = np.where(slice_seg != 0)
+
+    result = []
+    for k in range(len(indices_positive[0])):
+        ind = [indices_positive[0][k], indices_positive[1][k]]
+        result.append(np.expand_dims(data_to_patch[ind[0] - patch_size / 2:ind[0] + patch_size / 2, ind[1] - patch_size / 2:ind[1] + patch_size / 2, :], axis=0))
+    if len(result) != 0:
+        return np.concatenate(result, axis=0)
+    else:
+        return None
+
+
 def extract_patch_from_slice(slice_im, slice_seg=None, patch_size=32, max_patches_factor=1):
     if slice_seg is not None:
         data_to_patch = np.stack((slice_im, slice_seg), axis=2)
@@ -108,7 +122,10 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
                 normalized_slice = (data_im[k] - np.mean(data_im[k])) / np.abs(np.percentile(data_im[k], 1) - np.percentile(data_im[k], 99))
                 #print normalized_slice.shape, data_seg[k].shape
 
-                patches = extract_patch_from_slice(data_im[k], data_seg[k], patch_size, max_patches_factor)
+                patches_pos = extract_all_positive_patches_from_slice(normalized_slice, data_seg[k], patch_size)
+                patches = extract_patch_from_slice(normalized_slice, data_seg[k], patch_size, max_patches_factor)
+                if patches_pos is not None:
+                    patches = np.concatenate((patches_pos, patches), axis=0)
                 number_of_patches = patches.shape[0]
                 # print k, number_of_slices, number_of_patches
                 for j in range(number_of_patches):
@@ -118,7 +135,13 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
                     result = {}
                     result['epoch'] = e+1
                     result['patch'] = patch_im
-                    if patch_seg[int(patch_size / 2), int(patch_size / 2)] == 1:
+                    """plt.figure()
+                    plt.subplot(2,1,1)
+                    plt.imshow(patch_im)
+                    plt.subplot(2, 1, 2)
+                    plt.imshow(patch_seg)
+                    plt.show()"""
+                    if patch_seg[int(patch_size / 2), int(patch_size / 2)] != 0:
                         result['class'] = 1
                     else:
                         result['class'] = 0
@@ -158,7 +181,7 @@ test_ratio = 0.2
 nb_epochs = 500
 minibatch_size = 10000
 max_patches_factor = 10
-evaluation_factor = 1000
+evaluation_factor = 2500
 
 
 def modelA():
@@ -217,7 +240,8 @@ def modelB():
 
 model = modelB()
 
-list_data = extract_list_file_from_path('/home/neuropoly/data/large_nobrain')
+#list_data = extract_list_file_from_path('/home/neuropoly/data/large_nobrain')
+list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/large_nobrain')
 np.random.shuffle(list_data)
 nb_images = len(list_data)
 nb_test = int(round(test_ratio * nb_images))
@@ -240,7 +264,6 @@ for i, (X_test, y_test) in enumerate(minibatch_iterator_test):
     test_stats['n_test'] += len(y_test)
     test_stats['n_test_pos'] += sum(y_test)
 print("Test set is %d patches (%d positive)" % (test_stats['n_test'], test_stats['n_test_pos']))
-sys.exit(1)
 
 minibatch_iterators = iter_minibatches(data_stream_train, minibatch_size)
 total_vect_time = 0.0
