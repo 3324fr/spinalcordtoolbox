@@ -240,8 +240,8 @@ def modelB():
 
 model = modelB()
 
-#list_data = extract_list_file_from_path('/home/neuropoly/data/large_nobrain')
-list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/large_nobrain')
+list_data = extract_list_file_from_path('/home/neuropoly/data/large_nobrain')
+#list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/large_nobrain')
 np.random.shuffle(list_data)
 nb_images = len(list_data)
 nb_test = int(round(test_ratio * nb_images))
