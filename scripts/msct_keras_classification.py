@@ -97,7 +97,7 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
         if nb_epochs != 1:
             print 'Epoch ' + str(e + 1) + '/' + str(nb_epochs)
         for i, fname in enumerate(list_data):
-            print fname
+            #print fname
             data_im, data_seg = extract_slices_from_image(list_data[i][0], list_data[i][1])
             number_of_slices = len(data_im)
 
@@ -106,7 +106,7 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
             for k in arr:
                 # slice-by-slice intensity normalization
                 normalized_slice = (data_im[k] - np.mean(data_im[k])) / np.abs(np.percentile(data_im[k], 1) - np.percentile(data_im[k], 99))
-                print normalized_slice.shape, data_seg[k].shape
+                #print normalized_slice.shape, data_seg[k].shape
 
                 patches = extract_patch_from_slice(normalized_slice, data_seg[k], patch_size, max_patches_factor)
                 number_of_patches = patches.shape[0]
