@@ -4,7 +4,7 @@
 # This module contains some functions and algorithm for image classification and segmentation
 # using supervised machine learning
 # GPU run command:
-#    THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python msct_keras_classification.py
+#    THEANO_FLAGS=mode=FAST_RUN,device=gpu1,floatX=float32 python msct_keras_classification.py
 #
 # ---------------------------------------------------------------------------------------
 # Copyright (c) 2016 Polytechnique Montreal <www.neuro.polymtl.ca>
@@ -103,7 +103,10 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
             arr = range(number_of_slices)
             np.random.shuffle(arr)
             for k in arr:
-                patches = extract_patch_from_slice(data_im[k], data_seg[k], patch_size, max_patches_factor)
+                # slice-by-slice intensity normalization
+                normalized_slice = (data_im[k] - np.mean(data_im[k])) / np.abs(np.percentile(data_im[k], 1) - np.percentile(data_im[k], 99))
+
+                patches = extract_patch_from_slice(normalized_slice, data_seg[k], patch_size, max_patches_factor)
                 number_of_patches = patches.shape[0]
                 # print k, number_of_slices, number_of_patches
                 for j in range(number_of_patches):
