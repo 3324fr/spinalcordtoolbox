@@ -97,6 +97,7 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
         if nb_epochs != 1:
             print 'Epoch ' + str(e + 1) + '/' + str(nb_epochs)
         for i, fname in enumerate(list_data):
+            print fname
             data_im, data_seg = extract_slices_from_image(list_data[i][0], list_data[i][1])
             number_of_slices = len(data_im)
 
