@@ -51,7 +51,9 @@ def extract_slices_from_image(fname_im, fname_seg=None):
     for k in range(nz):
         data_im.append(im_data.data[:, :, k])
         if fname_seg:
-            data_seg.append(im_seg.data[:, :, k])
+            slice_seg =im_seg.data[:, :, k]
+            slice_seg = slice_seg.astype(int)
+            data_seg.append(slice_seg)
 
     if fname_seg:
         return data_im, data_seg
@@ -60,7 +62,7 @@ def extract_slices_from_image(fname_im, fname_seg=None):
 
 def extract_all_positive_patches_from_slice(slice_im, slice_seg, patch_size=32):
     data_to_patch = np.stack((slice_im, slice_seg), axis=2)
-    indices_positive = np.where(slice_seg != 0)
+    indices_positive = np.where(slice_seg == 1)
 
     result = []
     for k in range(len(indices_positive[0])):
@@ -141,7 +143,7 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
                     plt.subplot(2, 1, 2)
                     plt.imshow(patch_seg)
                     plt.show()"""
-                    if patch_seg[int(patch_size / 2), int(patch_size / 2)] != 0:
+                    if patch_seg[int(patch_size / 2), int(patch_size / 2)] == 1:
                         result['class'] = 1
                     else:
                         result['class'] = 0
@@ -177,7 +179,7 @@ def iter_minibatches(patch_iter, minibatch_size):
 print('creating the model')
 
 patch_size = 32
-test_ratio = 0.2
+test_ratio = 0.02
 nb_epochs = 500
 minibatch_size = 10000
 max_patches_factor = 10
