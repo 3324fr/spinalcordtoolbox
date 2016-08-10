@@ -132,7 +132,9 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
                     patches = np.concatenate((patches_pos, patches), axis=0)
                 number_of_patches = patches.shape[0]
                 # print k, number_of_slices, number_of_patches
-                for j in range(number_of_patches):
+                arr_p = range(number_of_patches)
+                np.random.shuffle(arr_p)
+                for j in arr_p:
                     patch_im = patches[j, :, :, 0]
                     patch_seg = patches[j, :, :, 1]
 
