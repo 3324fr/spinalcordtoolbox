@@ -270,7 +270,7 @@ for i, (X_test, y_test) in enumerate(minibatch_iterator_test):
     test_stats['n_test_pos'] += sum(y_test)
 print("Test set is %d patches (%d positive)" % (test_stats['n_test'], test_stats['n_test_pos']))
 weight_class = [test_stats['n_test_pos'] / float(test_stats['n_test']), 1.0]
-print 100.0 * weight_class, '% positive'
+print 100.0 * weight_class[0], '% positive'
 
 minibatch_iterators = iter_minibatches(data_stream_train, minibatch_size)
 total_vect_time = 0.0
