@@ -45,6 +45,9 @@ def extract_slices_from_image(fname_im, fname_seg=None):
     nx, ny, nz, nt, px, py, pz, pt = im_data.dim
     if fname_seg:
         im_seg = Image(fname_seg)
+        im_seg.data = im_seg.data.astype(int)
+
+    im_data.data = (im_data.data - np.mean(im_data.data)) / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
 
     data_im = []
     data_seg = []
@@ -52,7 +55,6 @@ def extract_slices_from_image(fname_im, fname_seg=None):
         data_im.append(im_data.data[:, :, k])
         if fname_seg:
             slice_seg =im_seg.data[:, :, k]
-            slice_seg = slice_seg.astype(int)
             data_seg.append(slice_seg)
 
     if fname_seg:
@@ -121,11 +123,11 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
             np.random.shuffle(arr)
             for k in arr:
                 # slice-by-slice intensity normalization
-                normalized_slice = (data_im[k] - np.mean(data_im[k])) / np.abs(np.percentile(data_im[k], 1) - np.percentile(data_im[k], 99))
+                #normalized_slice = (data_im[k] - np.mean(data_im[k])) / np.abs(np.percentile(data_im[k], 1) - np.percentile(data_im[k], 99))
                 #print normalized_slice.shape, data_seg[k].shape
 
-                patches_pos = extract_all_positive_patches_from_slice(normalized_slice, data_seg[k], patch_size)
-                patches = extract_patch_from_slice(normalized_slice, data_seg[k], patch_size, max_patches_factor)
+                patches_pos = extract_all_positive_patches_from_slice(data_im[k], data_seg[k], patch_size)
+                patches = extract_patch_from_slice(data_im[k], data_seg[k], patch_size, max_patches_factor)
                 if patches_pos is not None:
                     patches = np.concatenate((patches_pos, patches), axis=0)
                 number_of_patches = patches.shape[0]
@@ -138,11 +140,12 @@ def stream_images(list_data, patch_size, max_patches_factor, nb_epochs):
                     result['epoch'] = e+1
                     result['patch'] = patch_im
                     """plt.figure()
-                    plt.subplot(2,1,1)
+                    plt.subplot(2, 1, 1)
                     plt.imshow(patch_im)
                     plt.subplot(2, 1, 2)
                     plt.imshow(patch_seg)
-                    plt.show()"""
+                    plt.savefig('foo.png')
+                    #plt.show()"""
                     if patch_seg[int(patch_size / 2), int(patch_size / 2)] == 1:
                         result['class'] = 1
                     else:
@@ -179,7 +182,7 @@ def iter_minibatches(patch_iter, minibatch_size):
 print('creating the model')
 
 patch_size = 32
-test_ratio = 0.02
+test_ratio = 0.2
 nb_epochs = 500
 minibatch_size = 10000
 max_patches_factor = 10
@@ -266,6 +269,8 @@ for i, (X_test, y_test) in enumerate(minibatch_iterator_test):
     test_stats['n_test'] += len(y_test)
     test_stats['n_test_pos'] += sum(y_test)
 print("Test set is %d patches (%d positive)" % (test_stats['n_test'], test_stats['n_test_pos']))
+weight_class = [test_stats['n_test_pos'] / float(test_stats['n_test']), 1.0]
+print 100.0 * weight_class, '% positive'
 
 minibatch_iterators = iter_minibatches(data_stream_train, minibatch_size)
 total_vect_time = 0.0
@@ -295,11 +300,7 @@ print 'start training'
 for i, (X_train, y_train) in enumerate(minibatch_iterators):
     number_of_positive = sum(y_train)
     if number_of_positive == 0:
-        print 'No positive sample...'
-        continue
-
-    weight_class = [sum(y_train) / float(len(y_train)), 1.0]
-    #sample_weights = [weight_class[sample_class] for sample_class in y_train]
+        print i, 'No positive sample...'
 
     tick = time.time()
 

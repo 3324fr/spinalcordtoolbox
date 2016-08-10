@@ -45,7 +45,7 @@ plt.subplot(2, 2, 1)
 accuracy, n_examples = map(list, zip(*cls_stats['accuracy_history']))
 plot_result(n_examples, accuracy, "training examples (#)", 'accuracy')
 ax = plt.gca()
-ax.set_ylim((0.9, 1))
+ax.set_ylim((0, 1))
 
 plt.subplot(2, 2, 2)
 precision, n_examples = map(list, zip(*cls_stats['precision_history']))
