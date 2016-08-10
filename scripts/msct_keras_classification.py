@@ -307,7 +307,7 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
     tick = time.time()
 
     # update estimator with examples in the current mini-batch
-    y_train = np_utils.to_categorical(y_train)
+    y_train = np_utils.to_categorical(y_train, nb_classes=2)
     model.train_on_batch(X_train, y_train, class_weight=weight_class)
     cls_stats['total_fit_time'] += time.time() - tick
     cls_stats['n_train'] += X_train.shape[0]
