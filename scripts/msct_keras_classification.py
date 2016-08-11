@@ -36,6 +36,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation, Dropout, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
+from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD
 from keras.utils import np_utils
 
@@ -184,11 +185,11 @@ def iter_minibatches(patch_iter, minibatch_size):
 print('creating the model')
 
 patch_size = 32
-test_ratio = 0.2
+test_ratio = 0.1
 nb_epochs = 500
-minibatch_size = 10000
+minibatch_size = 1000
 max_patches_factor = 10
-evaluation_factor = 2500
+evaluation_factor = 5000
 
 
 def modelA():
@@ -227,8 +228,10 @@ def modelB():
     # input: 32x32 images with 1 channels -> (1, 32, 32) tensors.
     # this applies 32 convolution filters of size 3x3 each.
     model.add(Convolution2D(32, 3, 3, border_mode='valid', input_shape=(1, patch_size, patch_size)))
+    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(Convolution2D(32, 3, 3))
+    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
@@ -236,10 +239,12 @@ def modelB():
     model.add(Flatten())
     # Note: Keras does automatic shape inference.
     model.add(Dense(128))
+    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
     model.add(Dense(2))
+    model.add(BatchNormalization())
     model.add(Activation('softmax'))
 
     model.compile(loss='categorical_crossentropy', optimizer='adadelta')
