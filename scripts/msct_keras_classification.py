@@ -306,8 +306,8 @@ def progress(stats):
 print 'start training'
 for i, (X_train, y_train) in enumerate(minibatch_iterators):
     number_of_positive = sum(y_train)
-    if number_of_positive == 0:
-        print i, 'No positive sample...'
+    #if number_of_positive == 0:
+    #    print i, 'No positive sample...'
 
     tick = time.time()
 
@@ -318,7 +318,7 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
     cls_stats['n_train'] += X_train.shape[0]
     cls_stats['n_train_pos'] += sum(y_train)
 
-    if i % evaluation_factor == 0:
+    if i % evaluation_factor == 0 and i != 0:
         print 'Iteration', i
         print '~' + str(cls_stats['n_train']*test_ratio/test_stats['n_test']) + ' epoch(s)'
         cls_stats['prediction_time'] = 0
