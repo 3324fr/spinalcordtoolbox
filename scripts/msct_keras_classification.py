@@ -211,7 +211,6 @@ def modelA():
     model.add(Dropout(0.25))
 
     model.add(Flatten())
-    # Note: Keras does automatic shape inference.
     model.add(Dense(256))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
