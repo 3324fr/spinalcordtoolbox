@@ -15,7 +15,19 @@ def random_rotation(data, data_seg, data_gmseg,nz):
         data[:,:,iter] = rotate(data[:,:,iter], rand_angle, axes = (0,1), reshape = False)
         data_seg[:,:,iter] = rotate(data_seg[:,:,iter], rand_angle, axes=(0,1), reshape=False)
         data_gmseg[:,:,iter] = rotate(data_gmseg[:,:,iter], rand_angle, axes=(0,1), reshape=False)
-    return data, data_seg, data_gmseg
+    return data, data_seg, data_gmseg, rand_angle
+
+def flip_lr(data):
+    result = np.zeros(data.shape)
+    for it_slice in range(0, data.shape[2]):
+        result[:, :, it_slice] = np.flipud(data[:, :, it_slice])
+    return result
+
+def rotate_data(data, rand_angle, order=0):
+    result = np.zeros(data.shape)
+    for it_slice in range(0, data.shape[2]):
+        result[:, :, it_slice] = rotate(data[:, :, it_slice], rand_angle, axes=(0,1), reshape=False, order=order)
+    return result
 
 
 def flipped_lr(data, data_seg, data_gmseg, nz):
@@ -61,7 +73,7 @@ def extract_fname_list(folder_path):
             if dir == str(line[0:len(line)-1]):
                 for root, dirs, files in os.walk(folder_path + '/' + dir + '/t2s'):
                     for file in files:
-                        if file.endswith('nii.gz') and file.find('_seg') == -1 and file.find('_gmseg') == -1:
+                        if file.endswith('_N4.nii.gz') and file.find('_seg') == -1 and file.find('_gmseg') == -1:
                             list_data.append(folder_path + '/' + dir + '/t2s/' + file)
                         if file.find('_gmseg') != -1 and file.find('manual_rater') == -1:
                             list_data.append(folder_path + '/' + dir + '/t2s/' + file)
@@ -75,18 +87,47 @@ def extract_fname_list(folder_path):
     fp.close()
     return list_data, dirs_name
 
+def extract_fname_list_multi(folder_path):
+    list_data = []
+    dirs_name = []
+    path_tmp = sct.tmp_create()
+    for directory in os.listdir(folder_path):
+        if os.path.exists(folder_path + '/' + directory + '/t2s/'):
+            result_folder = {}
+            result_folder['data'] = None
+            result_folder['seg'] = []
+            result_folder['gmseg'] = []
+            for root, dirs, files in os.walk(folder_path + '/' + directory + '/t2s/'):
+                for f in files:
+                    if f.endswith('_N4.nii.gz') and f.find('_seg') == -1 and f.find('_gmseg') == -1:
+                        result_folder['data'] = folder_path + '/' + directory + '/t2s/' + f
+                    if f.find('_gmseg') != -1 and f.find('manual_rater') == -1:
+                        result_folder['gmseg'].append(folder_path + '/' + directory + '/t2s/' + f)
+                    if f.find('_seg') != -1 and f.find('manual_rater') == -1:
+                        result_folder['seg'].append(folder_path + '/' + directory + '/t2s/' + f)
+                    if f.find('manual_rater') != -1:
+                        fname_seg, fname_gmseg = get_gmseg_from_multilabel(f, folder_path + '/' + directory + '/t2s', path_tmp, directory)
+                        result_folder['gmseg'].append(fname_gmseg)
+                        result_folder['seg'].append(fname_seg)
+                    if f.find('level') != -1 and f.find('_reg') == -1:
+                        result_folder['level'] = folder_path + '/' + directory + '/t2s/' + f
+            list_data.append(result_folder)
+            dirs_name.append(directory)
+    return list_data, dirs_name
+
 
 # Extract the GM segmentation from the multilabeled one
 # ==========================================================================================
-def get_gmseg_from_multilabel(path, path_tmp, dir):
+def get_gmseg_from_multilabel(fname_multilabel, path, path_tmp, dir):
     from msct_image import Image
 
     path_data = path
-    fname_multilabel = 't2s_gmseg_manual_rater_unf.nii.gz'
+    #fname_multilabel = 't2s_gmseg_manual_rater_unf.nii.gz'
 
     lim = 10
-    fname_gm = 't2s_gmseg_manual.nii.gz'
-    fname_sc = 't2s_seg_manual.nii.gz'
+    path, filename, ext = sct.extract_fname(fname_multilabel)
+    fname_gm = filename + '_gmseg_manual.nii.gz'
+    fname_sc = filename + '_seg_manual.nii.gz'
 
     if dir.find('challenge') != -1:
         dir_id = dir.split('_')[1]
@@ -140,59 +181,69 @@ def main_denoise():
 # MAIN
 # ==========================================================================================
 def main():
-    folder_path = '/Volumes/folder_shared/data_machine_learning/dataset_t2s_denoised'
-    data_list, dirs_name = extract_fname_list(folder_path)
+    folder_path = '/Volumes/folder_shared/data_machine_learning/dataset_original/wT2s/training'
+    output_folder = '/Volumes/folder_shared/data_machine_learning/dataset_original/wT2s/training_augmented'
+    data_list, dirs_name = extract_fname_list_multi(folder_path)
 
-    from sct_data_augmentation_vertebra import extract_label_list, vertebral_similarity, registration_vertebral_levels, crop_segmentation, change_orientation
+    for i, d in enumerate(data_list):
+        print i, '/', len(data_list)
+        fname_im = d['data']
+        path, filename, ext = sct.extract_fname(fname_im)
+        file_name = path.split('/')[-3]
 
-    new_name = []
+        list_seg = d['seg']
+        list_gmseg = d['gmseg']
+        level_file = d['level']
 
-    list_image_labels, data_list, dirs_name = extract_label_list(folder_path, data_list, dirs_name)
+        # move level file
+        _, _, ext_levels = sct.extract_fname(level_file)
+        sct.run('cp ' + level_file + ' ' + output_folder + '/' + file_name + '_levels' + ext_levels, verbose=0)
 
-    data_list = crop_segmentation(data_list, dirs_name)
+        # augment data
+        im = Image(fname_im)
+        data = im.data
+        hdr = im.hdr
 
-    #for iter in range(0,len(dirs_name)):
-    #    fname = data_list[iter*3]
-    #    fname_out = vertebral_similarity(fname, data_list, list_image_labels, 1)
-    #    new_name.append(registration_vertebral_levels(fname, fname_out, data_list, dirs_name, list_image_labels))
+        nb_rotation = 3
+        rand_angles_1 = np.random.uniform(low=-5.0, high=5.0, size=nb_rotation)
+        rand_angles_2 = np.random.uniform(low=-5.0, high=5.0, size=nb_rotation)
 
-    for iter in range(0,len(dirs_name)):
-        fname_im = data_list[iter*3]
-        fname_seg = data_list[iter*3 +2]
-        fname_gmseg = data_list[iter*3+ 1]
-        path, file,ext = sct.extract_fname(fname_im)
-        file_name = path.split('/')[5]
+        data_to_save = []
+        data_to_save.append([data, ''])
+        data_f = flip_lr(data)
+        data_to_save.append([data_f, '_fl'])
+        for angle in rand_angles_1:
+            data_to_save.append([rotate_data(data, angle, 1), '_r_'+str(round(angle, 3))])
+        for angle in rand_angles_2:
+            data_to_save.append([rotate_data(data_f, angle, 1), '_fl_r_'+str(round(angle, 3))])
 
-        im = Image(data_list[iter*3])
-        hdr_im = im.hdr.copy()
-        nx, ny, nz, nt, px, py, pz, pt = im.dim
+        for j, f in enumerate(list_seg):
+            data_seg = Image(f).data
+            data_to_save.append([data_seg, '_seg'+str(j+1)])
+            for angle in rand_angles_1:
+                data_to_save.append([rotate_data(data_seg, angle), '_r_'+str(round(angle, 3))+'_seg'+str(j+1)])
+            data_seg_f = flip_lr(data_seg)
+            data_to_save.append([data_seg_f, '_fl'+'_seg'+str(j+1)])
+            for angle in rand_angles_2:
+                data_to_save.append([rotate_data(data_seg_f, angle), '_fl_r_'+str(round(angle, 3))+'_seg'+str(j+1)])
 
-        #for j in range(0,5):
-        #    path, file_name, ext = sct.extract_fname(new_name[iter] + '_' + str(j) + '.nii.gz')
+        for j, f in enumerate(list_gmseg):
+            data_gmseg = Image(f).data
+            data_to_save.append([data_gmseg, '_gmseg'+str(j+1)])
+            for angle in rand_angles_1:
+                data_to_save.append([rotate_data(data_gmseg, angle), '_r_'+str(round(angle, 3))+'_gmseg'+str(j+1)])
+            data_gmseg_f = flip_lr(data_gmseg)
+            data_to_save.append([data_gmseg_f, '_fl'+'_gmseg'+str(j+1)])
+            for angle in rand_angles_2:
+                data_to_save.append([rotate_data(data_gmseg_f, angle), '_fl_r_'+str(round(angle, 3))+'_gmseg'+str(j+1)])
 
-            #data = Image(new_name[iter] + '_' + str(j) + '.nii.gz')
-            # data_seg = Image(new_name[iter] + '_' + str(j) + '_seg.nii.gz')
-            # data_gmseg = Image(new_name[iter] + '_' + str(j) + '_gmseg.nii.gz')
+        # save data
+        for data2save in data_to_save:
+            im_t = Image(data2save[0])
+            im_t.hdr = hdr
+            im_t.setFileName(output_folder + '/' + file_name + data2save[1] + '.nii.gz')
+            im_t.save()
 
-        data = Image(fname_im).data
-        data_seg = Image(fname_seg).data
-        data_gmseg = Image(fname_gmseg).data
-
-        data_t, data_seg_t, data_gmseg_t = random_rotation(data, data_seg, data_gmseg, nz)
-        data_t, data_seg_t, data_gmseg_t = flipped_lr(data_t, data_seg_t, data_gmseg_t, nz)
-
-        im_t = Image(data_t)
-        im_seg_t = Image(data_seg_t)
-        im_gm_t = Image(data_gmseg_t)
-        im_t.setFileName(file_name + '_m.nii.gz')
-        im_seg_t.setFileName(file_name + '_seg_m.nii.gz')
-        im_gm_t.setFileName(file_name + '_gmseg_m.nii.gz')
-        im_t.hdr = hdr_im
-        im_seg_t.hdr = hdr_im
-        im_gm_t.hdr = hdr_im
-        im_t.save()
-        im_seg_t.save()
-        im_gm_t.save()
 
 
 # START PROGRAM
