@@ -249,7 +249,30 @@ def modelB():
     model.compile(loss='categorical_crossentropy', optimizer='adadelta')
     return model
 
-model = modelB()
+def modelC():
+    model = Sequential()
+    # input: 32x32 images with 1 channels -> (1, 32, 32) tensors.
+    # this applies 32 convolution filters of size 3x3 each.
+    model.add(Convolution2D(32, 3, 3, border_mode='valid', input_shape=(1, patch_size, patch_size)))
+    model.add(Activation('relu'))
+    model.add(Convolution2D(32, 3, 3))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+
+    model.add(Flatten())
+    # Note: Keras does automatic shape inference.
+    model.add(Dense(128))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+
+    model.add(Dense(2))
+    model.add(Activation('softmax'))
+
+    model.compile(loss='categorical_crossentropy', optimizer='adadelta')
+    return model
+
+model = modelC()
 
 list_data = extract_list_file_from_path('/home/neuropoly/data/small_nobrain')
 #list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/large_nobrain')
@@ -355,8 +378,8 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
                        total_vect_time + cls_stats['total_fit_time'])
         cls_stats['runtime_history'].append(run_history)
 
-        pickle.dump(cls_stats, open("/home/neuropoly/data/results_small/cnn_results_it"+str(i)+".p", "wb"))
-        model.save('/home/neuropoly/data/results_small/model_cnn_it'+str(i)+'.h5')
+        pickle.dump(cls_stats, open("/home/neuropoly/data/result_large_nobrain_nobatchnorm/cnn_results_it"+str(i)+".p", "wb"))
+        model.save('/home/neuropoly/data/result_large_nobrain_nobatchnorm/model_cnn_it'+str(i)+'.h5')
 
         print(progress(cls_stats))
         print('\n')
