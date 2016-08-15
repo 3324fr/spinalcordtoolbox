@@ -5,6 +5,7 @@
 # using supervised machine learning
 # GPU run command:
 #    THEANO_FLAGS=mode=FAST_RUN,device=gpu1,floatX=float32 python msct_keras_classification.py
+#    THEANO_FLAGS=mode=FAST_RUN,device=gpu0,floatX=float32 python msct_keras_classification.py
 #
 # ---------------------------------------------------------------------------------------
 # Copyright (c) 2016 Polytechnique Montreal <www.neuro.polymtl.ca>
@@ -37,7 +38,7 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Activation, Dropout, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.layers.normalization import BatchNormalization
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adadelta
 from keras.utils import np_utils
 
 
@@ -48,14 +49,15 @@ def extract_slices_from_image(fname_im, fname_seg=None):
         im_seg = Image(fname_seg)
         im_seg.data = im_seg.data.astype(int)
 
-    im_data.data = (im_data.data - np.mean(im_data.data)) / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
+    #im_data.data = (im_data.data - np.mean(im_data.data)) / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
+    im_data.data = 255.0 * im_data.data / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
 
     data_im = []
     data_seg = []
     for k in range(nz):
         data_im.append(im_data.data[:, :, k])
         if fname_seg:
-            slice_seg =im_seg.data[:, :, k]
+            slice_seg = im_seg.data[:, :, k]
             data_seg.append(slice_seg)
 
     if fname_seg:
@@ -269,7 +271,8 @@ def modelC():
     model.add(Dense(2))
     model.add(Activation('softmax'))
 
-    model.compile(loss='categorical_crossentropy', optimizer='adadelta')
+    ada = Adadelta(lr=0.1, rho=0.95, epsilon=1e-08)
+    model.compile(loss='categorical_crossentropy', optimizer=ada)
     return model
 
 model = modelC()
@@ -378,8 +381,8 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
                        total_vect_time + cls_stats['total_fit_time'])
         cls_stats['runtime_history'].append(run_history)
 
-        pickle.dump(cls_stats, open("/home/neuropoly/data/result_large_nobrain_nobatchnorm/cnn_results_it"+str(i)+".p", "wb"))
-        model.save('/home/neuropoly/data/result_large_nobrain_nobatchnorm/model_cnn_it'+str(i)+'.h5')
+        pickle.dump(cls_stats, open("/home/neuropoly/data/result_large_nobrain_nobatchnorm2/cnn_results_it"+str(i)+".p", "wb"))
+        model.save('/home/neuropoly/data/result_large_nobrain_nobatchnorm2/model_cnn_it'+str(i)+'.h5')
 
         print(progress(cls_stats))
         print('\n')
