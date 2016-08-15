@@ -13,6 +13,8 @@
 
 import numpy as np
 import subprocess as sp
+import nibabel as nb
+from msct_gmseg_utils import load_level
 
 def antsN4BiasFieldCorrection(input_img, output_img=None, dim=3, mask=None, scale=None, weight=None, shrink=4, conv=None, bspline=None, histsharp=None):
 	# If no option is given the script is run with standard parameters
@@ -79,8 +81,23 @@ def antsN4BiasFieldCorrection(input_img, output_img=None, dim=3, mask=None, scal
 def vert_txt2nii(img, vlevel, output_nii):
 
 	img_nii = nb.load(img)
+
+	if 'nii' in vlevel:
+		level_nii = nb.load(vlevel)
+		level_data = level_nii.get_data()
+		cord_levels = []
+		for i in range(level_nii.shape[2]):
+			cord_levels.append(np.max(level_data[:,:,i]))
+
+	elif 'txt' in vlevel:
+		cord_levels = load_level(vlevel)
+
+	else:
+		# Throw exception
+		print 'ERROR: Invalid level file'
+
 	level_data = np.ones(img_nii.shape)
-	cord_levels = load_level(vlevel)
+	
 	for i in range(img_nii.shape[2]):
 		level_data[:,:,i] = level_data[:,:,i] * cord_levels[i]
 
@@ -96,11 +113,10 @@ def cstretch(a, r1, r0, p):
     return anorm
 
 def IRS_transformation(irs, imdata, segdata=None):
-	print irs.stdrange[1]
-	print irs.stdrange[0]
+
 	imdata = cstretch(imdata, irs.stdrange[1], irs.stdrange[0], 99.9)
 
-	if segdata:
+	if segdata != None:
 		# If we have the segmentation we can pick out the cord coordinates
 		# from the non-zero indicies in the seg
 		nz_idx = np.nonzero(segdata)
