@@ -72,7 +72,9 @@ def extract_all_positive_patches_from_slice(slice_im, slice_seg, patch_size=32):
     result = []
     for k in range(len(indices_positive[0])):
         ind = [indices_positive[0][k], indices_positive[1][k]]
-        result.append(np.expand_dims(data_to_patch[ind[0] - patch_size / 2:ind[0] + patch_size / 2, ind[1] - patch_size / 2:ind[1] + patch_size / 2, :], axis=0))
+        patch = data_to_patch[ind[0] - patch_size / 2:ind[0] + patch_size / 2, ind[1] - patch_size / 2:ind[1] + patch_size / 2, :]
+        if patch.shape[0] == patch_size and patch.shape[1] == patch_size:
+            result.append(np.expand_dims(patch, axis=0))
     if len(result) != 0:
         return np.concatenate(result, axis=0)
     else:
@@ -277,8 +279,8 @@ def modelC():
 
 model = modelC()
 
-list_data = extract_list_file_from_path('/home/neuropoly/data/small_nobrain_nopad')
-#list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/large_nobrain')
+#list_data = extract_list_file_from_path('/home/neuropoly/data/small_nobrain_nopad')
+list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/small_nobrain_nopad')
 np.random.shuffle(list_data)
 nb_images = len(list_data)
 nb_test = int(round(test_ratio * nb_images))
