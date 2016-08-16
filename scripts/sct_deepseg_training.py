@@ -54,82 +54,90 @@ def get_parser():
 
 ################
 
-# Helper function #
 
-# {"unf_pain_13_gm_challenge_16": 
-# {
-# 	"aug2": {
-# 		"seg": ["unf_pain_13_gm_challenge_16_fl_r_-4.031_seg1.nii.gz", "unf_pain_13_gm_challenge_16_fl_r_-4.031_seg2.nii.gz", "unf_pain_13_gm_challenge_16_fl_r_-4.031_seg3.nii.gz", "unf_pain_13_gm_challenge_16_fl_r_-4.031_seg4.nii.gz"], 
-# 		"levels": "unf_pain_13_gm_challenge_16_levels.txt", 
-# 		"img": "unf_pain_13_gm_challenge_16_fl_r_-4.031.nii.gz", 
-# 		"gmseg": ["unf_pain_13_gm_challenge_16_fl_r_-4.031_gmseg1.nii.gz", "unf_pain_13_gm_challenge_16_fl_r_-4.031_gmseg2.nii.gz", "unf_pain_13_gm_challenge_16_fl_r_-4.031_gmseg3.nii.gz", "unf_pain_13_gm_challenge_16_fl_r_-4.031_gmseg4.nii.gz"]
-# 			}, 
-# 	"org": {same}
-#  	"aug1": {same}
-#  	...
-#   ...
-
-## Deprecated functionality
-def add_training_data(jf, path):
+# def add_training_data(jf, path):
 		
-	data = open_json(jf)
+# 	data = open_json(jf)
 
-	i = 1
-	for site in ['site3', 'site4']:
-		comment = 'Data from %s' % site
-		for sub in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']:
-			subject = {}
+# 	i = 1
+# 	for site in ['site3', 'site4']:
+# 		comment = 'Data from %s' % site
+# 		for sub in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']:
+# 			subject = {}
 			
-			subject['path'] = path
+# 			subject['path'] = path
 
-			# Set image
-			img_fname = site + '-sc' + sub + '-image.nii.gz'
-			subject['img'] = img_fname
+# 			# Set image
+# 			img_fname = site + '-sc' + sub + '-image.nii.gz'
+# 			subject['img'] = img_fname
 			
-			# Add all 4 masks
-			subject['seg'] = {}
-			for j in range(1,5):
-				seg_fname = site + '-sc' + sub + '-mask-r%s.nii.gz' % str(j)
-				subject['seg'][j] = seg_fname
+# 			# Add all 4 masks
+# 			subject['seg'] = {}
+# 			for j in range(1,5):
+# 				seg_fname = site + '-sc' + sub + '-mask-r%s.nii.gz' % str(j)
+# 				subject['seg'][j] = seg_fname
 			
-			# Set levels
-			levels_fname = site + '-sc' + sub + '-levels.txt'
-			subject['levels'] = levels_fname
-			subject['comment'] = comment
+# 			# Set levels
+# 			levels_fname = site + '-sc' + sub + '-levels.txt'
+# 			subject['levels'] = levels_fname
+# 			subject['comment'] = comment
 
-			data['data']['subjects'][i] = subject
-			i += 1
+# 			data['data']['subjects'][i] = subject
+# 			i += 1
 
-	comment = 'Data from site2 in the ISMRM training set.'
-	site = 'site2'
-	for sub in ['02', '03', '04', '05', '06', '07', '08', '09', '10']:
-		# There is something wrong with subject 01 thus no import
-		subject = {}
+# 	comment = 'Data from site2 in the ISMRM training set.'
+# 	site = 'site2'
+# 	for sub in ['02', '03', '04', '05', '06', '07', '08', '09', '10']:
+# 		# There is something wrong with subject 01 thus no import
+# 		subject = {}
 		
-		subject['path'] = path
+# 		subject['path'] = path
 
-		# Set image
-		img_fname = site + '-sc' + sub + '-image.nii.gz'
-		subject['img'] = img_fname
+# 		# Set image
+# 		img_fname = site + '-sc' + sub + '-image.nii.gz'
+# 		subject['img'] = img_fname
 		
-		# Add all 4 masks
-		subject['seg'] = {}
-		for j in range(1,5):
-			seg_fname = site + '-sc' + sub + '-mask-r%s.nii.gz' % str(j)
-			subject['seg'][j] = seg_fname
+# 		# Add all 4 masks
+# 		subject['seg'] = {}
+# 		for j in range(1,5):
+# 			seg_fname = site + '-sc' + sub + '-mask-r%s.nii.gz' % str(j)
+# 			subject['seg'][j] = seg_fname
 		
-		# Set levels
-		levels_fname = site + '-sc' + sub + '-levels.txt'
-		subject['levels'] = levels_fname
-		subject['comment'] = comment
+# 		# Set levels
+# 		levels_fname = site + '-sc' + sub + '-levels.txt'
+# 		subject['levels'] = levels_fname
+# 		subject['comment'] = comment
 
-		data['data']['subjects'][i] = subject
+# 		data['data']['subjects'][i] = subject
 		# i += 1
 
 	# Spacing is wrong in site 1 data. Don't know how to fix it. Cannot run with the 
 	# N4 biasfield correction
 
 	# Add in Camilles data here as well
+
+# def apply_N4_correction(jf):
+# 	img_list = get_image_list(jf)
+# 	jdata = open_json(jf)
+# 	subjdata = jdata['data']['subjects']
+
+# 	sct.printv('Performing N4 bias field correction', 1, 'info')
+# 	for sub in subjdata.keys():
+# 		path = subjdata[sub]['path']
+
+# 		img = subjdata[sub]['img']
+# 		in_img_path = os.path.join(path, img)
+# 		out_img = img.split('.nii.gz')[0] + '_N4.nii.gz'
+# 		out_img_path = os.path.join(path, out_img)
+
+# 		antsN4BiasFieldCorrection(input_img=in_img_path, output_img=out_img_path)
+# 		subjdata[sub]['img'] = out_img
+
+# 	add_event(jf, 'Applied N4 bias field correction to training image')
+
+# 	save_json(jdata, jf)
+
+####################
 
 def parse_files(fl):
 	cord_segs = []
@@ -244,29 +252,6 @@ def add_aug_training_data(outpath):
 		json.dump(data_sorted, jf)  
 	
 	return json_path
-
-def apply_N4_correction(jf):
-	img_list = get_image_list(jf)
-	jdata = open_json(jf)
-	subjdata = jdata['data']['subjects']
-
-	sct.printv('Performing N4 bias field correction', 1, 'info')
-	for sub in subjdata.keys():
-		path = subjdata[sub]['path']
-
-		img = subjdata[sub]['img']
-		in_img_path = os.path.join(path, img)
-		out_img = img.split('.nii.gz')[0] + '_N4.nii.gz'
-		out_img_path = os.path.join(path, out_img)
-
-		antsN4BiasFieldCorrection(input_img=in_img_path, output_img=out_img_path)
-		subjdata[sub]['img'] = out_img
-
-	add_event(jf, 'Applied N4 bias field correction to training image')
-
-	save_json(jdata, jf)
-
-####################
 
 def move_data(jf, path):
 
@@ -429,10 +414,6 @@ def init_json(path):
 
 	return output_json
 
-def set_finish_time(jf):
-	data = open_json(jf)
-	data['Info']['Analysis finished'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-	save_json(data, jf)
 
 # Processing functions
 
@@ -687,83 +668,83 @@ def add_tmp_fname(jf, path):
 
 	save_json(subdata, jf)
 
-def quality_check(jf):
-	jdata = open_json(jf)['data']
+# def quality_check(jf):
+# 	jdata = open_json(jf)['data']
 
-	for s in jdata['subjects'].keys():
-		print s
-		sub = jdata['subjects'][s]
-		p = sub['path']
+# 	for s in jdata['subjects'].keys():
+# 		print s
+# 		sub = jdata['subjects'][s]
+# 		p = sub['path']
 
-		img1 = os.path.join(p, sub['img'])
-		img2 = os.path.join(p, sub['img'].split('.')[0] + '_N4.nii.gz')
+# 		img1 = os.path.join(p, sub['img'])
+# 		img2 = os.path.join(p, sub['img'].split('.')[0] + '_N4.nii.gz')
 
-		out1 = os.path.join(p, 'original.png')
-		out2 = os.path.join(p, 'N4corr.png')
+# 		out1 = os.path.join(p, 'original.png')
+# 		out2 = os.path.join(p, 'N4corr.png')
 
-		m = sp.check_output('fslstats ' + img1 + ' -p 99', shell=True)
-		cmd1 = ['slicer', img1, '-n -a -i 0', m, out1]
-		cmd2 = ['slicer', img2, '-n -a -i 0', m, out2]
+# 		m = sp.check_output('fslstats ' + img1 + ' -p 99', shell=True)
+# 		cmd1 = ['slicer', img1, '-n -a -i 0', m, out1]
+# 		cmd2 = ['slicer', img2, '-n -a -i 0', m, out2]
 
-		sp.call(' '.join(cmd1), shell=True)
-		sp.call(' '.join(cmd2), shell=True)
+# 		sp.call(' '.join(cmd1), shell=True)
+# 		sp.call(' '.join(cmd2), shell=True)
 
-		# list_im = [out1, out2]
-		# imgs    = [ PIL.Image.open(i) for i in list_im ]
-		# min_shape = sorted( [(np.sum(i.size), i.size ) for i in imgs])[0][1]
-		# imgs_comb = np.vstack( (np.asarray( i.resize(min_shape) ) for i in imgs ) )
-		# imgs_comb = PIL.Image.fromarray( imgs_comb)
-		# imgs_comb.save( os.path.join(p, 'overview.png' ))
+# 		# list_im = [out1, out2]
+# 		# imgs    = [ PIL.Image.open(i) for i in list_im ]
+# 		# min_shape = sorted( [(np.sum(i.size), i.size ) for i in imgs])[0][1]
+# 		# imgs_comb = np.vstack( (np.asarray( i.resize(min_shape) ) for i in imgs ) )
+# 		# imgs_comb = PIL.Image.fromarray( imgs_comb)
+# 		# imgs_comb.save( os.path.join(p, 'overview.png' ))
 
-def create_mask(jf):
+# def create_mask(jf):
 
-	jdata = open_json(jf)
-	subjdata = jdata['data']['subjects']
+# 	jdata = open_json(jf)
+# 	subjdata = jdata['data']['subjects']
 
-	for sub in subjdata.keys():
-		path = subjdata[sub]['path']
-		in_img = subjdata[sub]['img']
-		in_img_path = os.path.join(path, in_img)
+# 	for sub in subjdata.keys():
+# 		path = subjdata[sub]['path']
+# 		in_img = subjdata[sub]['img']
+# 		in_img_path = os.path.join(path, in_img)
 
-		mask = in_img.split('.')[0] + '_cordmask.nii.gz'
-		mask_path = os.path.join(path, mask)
+# 		mask = in_img.split('.')[0] + '_cordmask.nii.gz'
+# 		mask_path = os.path.join(path, mask)
 		
-		subjdata[sub]['mask'] = mask
+# 		subjdata[sub]['mask'] = mask
 
-		cmd = ['sct_create_mask', '-i', in_img_path, '-p', 'center', 
-			'-size', '40mm', '-f', 'box','-o', mask_path]
+# 		cmd = ['sct_create_mask', '-i', in_img_path, '-p', 'center', 
+# 			'-size', '40mm', '-f', 'box','-o', mask_path]
 
-		sp.call(' '.join(cmd), shell=True)
+# 		sp.call(' '.join(cmd), shell=True)
 
-	save_json(jdata, jf)
+# 	save_json(jdata, jf)
 
-def crop_segmentations(jf):
+# def crop_segmentations(jf):
 
-	jdata = open_json(jf)
-	subdata = jdata['data']['subjects']
+# 	jdata = open_json(jf)
+# 	subdata = jdata['data']['subjects']
 
-	sct.printv('Crop segmentations to same space as images',1, 'info')
+# 	sct.printv('Crop segmentations to same space as images',1, 'info')
 	
-	for s in subdata.keys():
-		seg_list = []
-		sub = subdata[s]
-		path = subdata[s]['path']
-		mask = os.path.join(path, sub['mask'])
-		segmentations = sub['seg']
-		for i in segmentations.keys():
-			in_seg = segmentations[i]
-			in_seg_path = os.path.join(path, in_seg)
+# 	for s in subdata.keys():
+# 		seg_list = []
+# 		sub = subdata[s]
+# 		path = subdata[s]['path']
+# 		mask = os.path.join(path, sub['mask'])
+# 		segmentations = sub['seg']
+# 		for i in segmentations.keys():
+# 			in_seg = segmentations[i]
+# 			in_seg_path = os.path.join(path, in_seg)
 
-			out_seg = in_seg.split('.nii.gz')[0] + '_crop.nii.gz'
-			out_seg_path = os.path.join(path, out_seg)
-			cmd = ['sct_crop_image', '-i', in_seg_path, '-m', mask, '-o', out_seg_path]
-			cmd = ' '.join(cmd)
-			sp.call(cmd, shell=True)
-			segmentations[i] = out_seg
+# 			out_seg = in_seg.split('.nii.gz')[0] + '_crop.nii.gz'
+# 			out_seg_path = os.path.join(path, out_seg)
+# 			cmd = ['sct_crop_image', '-i', in_seg_path, '-m', mask, '-o', out_seg_path]
+# 			cmd = ' '.join(cmd)
+# 			sp.call(cmd, shell=True)
+# 			segmentations[i] = out_seg
 
-		sub['seg'] = segmentations
+# 		sub['seg'] = segmentations
 
-	save_json(jdata, jf) 
+# 	save_json(jdata, jf) 
 
 def make_vert_nifti(jf, path):
 
@@ -772,17 +753,19 @@ def make_vert_nifti(jf, path):
 	sct.printv('Creating nifti files from vertebrae level text files', 1, 'info')
 	for s in subdata.keys():
 		for sub in subdata[s].keys():
-			img_path = os.path.join(path, subdata[s][sub]['img']) 
+			img = subdata[s][sub]['img']
+			img_path = os.path.join(path, img) 
 			level_file = subdata[s][sub]['levels']
 			level_path = str(os.path.join(path, level_file))
 
-			out_level_file = 'deepseg_tmp__' + level_file
+			out_level_file = sct.add_suffix(img, '_levels')
 			out_level_path = os.path.join(path, out_level_file)
-
+			
 			# This function can handle both nifti and 
 			vert_txt2nii(img_path, level_path, out_level_path)
+			subdata[s][sub]['levels'] = out_level_file
 
-	save_json(jdata, jf)
+	save_json(subdata, jf)
 
 def denoise(jf, v=3, f=1, h=0.05):
 
@@ -808,29 +791,29 @@ def denoise(jf, v=3, f=1, h=0.05):
 
 	save_json(jdata, jf)
 
-def contrast_stretch(jf):
-	jdata = open_json(jf)
-	subdata = jdata['data']['subjects']
+# def contrast_stretch(jf):
+# 	jdata = open_json(jf)
+# 	subdata = jdata['data']['subjects']
 
-	for s in subdata.keys():
-		path = subdata[s]['path']
-		img = subdata[s]['img']
+# 	for s in subdata.keys():
+# 		path = subdata[s]['path']
+# 		img = subdata[s]['img']
 
-		in_img_path = os.path.join(path, img)
-		# Make sure we read the N4 image!
-		nii = nb.load(str(in_img_path))
-		imdata = nii.get_data()
-		imdata = cstretch(imdata, 1, 0, 99.9)
+# 		in_img_path = os.path.join(path, img)
+# 		# Make sure we read the N4 image!
+# 		nii = nb.load(str(in_img_path))
+# 		imdata = nii.get_data()
+# 		imdata = cstretch(imdata, 1, 0, 99.9)
 
-		# Save data with only contrast stretch from 0 to 1
-		cstretch_name = sct.add_suffix(img,'_cs')
-		out_nii = nb.Nifti1Image(imdata, nii.get_affine())
-		nb.nifti1.save(out_nii, os.path.join(path, cstretch_name))
-		subdata[s]['img'] = cstretch_name
+# 		# Save data with only contrast stretch from 0 to 1
+# 		cstretch_name = sct.add_suffix(img,'_cs')
+# 		out_nii = nb.Nifti1Image(imdata, nii.get_affine())
+# 		nb.nifti1.save(out_nii, os.path.join(path, cstretch_name))
+# 		subdata[s]['img'] = cstretch_name
 
-	save_json(jdata, jf)
+# 	save_json(jdata, jf)
 
-def plot_histograms(jf, path):
+def plot_histograms(jf, path, qcpath):
 	sct.printv('Making some nice histograms!', 1, 'info')
 	subdata = open_json(jf)
 	b = 50
@@ -857,7 +840,7 @@ def plot_histograms(jf, path):
 	plt.axis([0,1,0,1.2])
 	plt.legend(['Average histogram', 'Std'])
 
-	plt.savefig('average_IRS_histograms.png')
+	plt.savefig(os.path.join(qc_path, 'average_IRS_histograms.png'))
 
 def move_final_files(jf, orgpath, newpath):
 
@@ -889,51 +872,76 @@ def move_final_files(jf, orgpath, newpath):
 	final_json = os.path.join(newpath, 'db.json')
 	sct.run('cp %s %s' % (tmp_org_json, final_json))
 
+def export_org_qc(jf, tmp_path, qcpath):
+	subdata = open_json(jf)
+
+	for s in subdata.keys():
+		sub = subdata[s]['org']
+
+		img = os.path.join(tmp_path, sub['img'])
+		gmseg = os.path.join(tmp_path, sub['gmseg'][0])
+		print str(img)
+		I = Image(str(img))
+		new_img_name = img.split('tmp__')[-1]
+		I.setFileName(new_img_name)
+
+		S = Image(str(gmseg))
+		I.save_quality_control(plane='axial', n_slices=1, seg=S, thr=0, cmap_col='red', format='.png', path_output=qcpath, verbose=1)
+
 def main(arguments):
 	
 	# Set timer for starting pre-processing
 	tic = timeit.default_timer()
 
-	MASTER_TRAINING_FOLDER = '/Volumes/Monster/Deepseg/data/original/wT2s/training_augmented'
-	
+	# MASTER_TRAINING_FOLDER = '/Volumes/Monster/Deepseg/data/original/wT2s/training_augmented'
+	MASTER_TRAINING_FOLDER = '/Volumes/Monster/Deepseg/data/original/wT2s/training_aug_subset'
 	TMP_OUTPUT = os.path.join(arguments['-f'], 'tmp')
+	QC_DIR = os.path.join(arguments['-f'], 'quality_control')
 
 	# Start by copying all the data to the new directory so we don't overwrite data in the original directory
-	sct.printv('Copying all data to new directory before pre-processing', 1, 'info')
-	sct.run('mkdir %s' % arguments['-f'])
-	cmd = 'cp -rv ' + MASTER_TRAINING_FOLDER + ' ' + TMP_OUTPUT
-	sct.run(cmd)
-	jf = add_aug_training_data(TMP_OUTPUT)
-	tmp_json = jf.split('.json')[0] + '_org.json'
+	# sct.printv('Copying all data to new directory before pre-processing', 1, 'info')
+	# sct.run('mkdir %s' % arguments['-f'])
+	# cmd = 'cp -rv ' + MASTER_TRAINING_FOLDER + ' ' + TMP_OUTPUT
+	# sct.run(cmd)
+	# jf = add_aug_training_data(TMP_OUTPUT)
+	# tmp_json = jf.split('.json')[0] + '_org.json'
 
-	sct.run('cp %s %s' % (jf, tmp_json))
+	# sct.run('cp %s %s' % (jf, tmp_json))
 
-	add_tmp_fname(jf, TMP_OUTPUT)
+	# add_tmp_fname(jf, TMP_OUTPUT)
 
 	# ------------  1. Resample data to 0.3x0.3 in-plane ------------ 
 	#resample(jf, path)
 
 	# ------------  2. Crop image and segmentation around the cord ------------ 	
-	crop_around_cord(jf, TMP_OUTPUT)
+	# crop_around_cord(jf, TMP_OUTPUT)
 
 	# ------------ 5. Train IRS model ------------
-	# jf = os.path.join(TMP_OUTPUT, 'db_sorted.json')
-	train_IRS_model(jf, TMP_OUTPUT)
+	jf = os.path.join(TMP_OUTPUT, 'db_sorted.json')
+	# train_IRS_model(jf, TMP_OUTPUT)
 
 	# ------------ 6. Apply IRS model ------------
-	apply_all_IRS_model(jf, TMP_OUTPUT)
+	# apply_all_IRS_model(jf, TMP_OUTPUT)
 
 	# ------------ 7. Make vertebrae levels nifti file ------------
 	# make_vert_nifti(jf, TMP_OUTPUT)
 
 	# ------------ 10. QA of data. ------------
-	plot_histograms(jf, TMP_OUTPUT) 	# <<< Will save as .png image
+	# plot_histograms(jf, TMP_OUTPUT, QC_DIR) 	# <<< Will save as .png image
 
 	# Move files to final destination
 	FINAL_OUT = os.path.join(arguments['-f'], 'pre_processed')
-	move_final_files(jf, TMP_OUTPUT, FINAL_OUT)
+	# move_final_files(jf, TMP_OUTPUT, FINAL_OUT)
 
-	sct.run('rm -r %s' % TMP_OUTPUT)
+	# Make QC Directory
+	try:
+		sct.run('mkdir %s' % QC_DIR)
+	except:
+		print 'Dir exists. Overwriting'
+
+	export_org_qc(jf, TMP_OUTPUT, QC_DIR)
+
+	# sct.run('rm -r %s' % TMP_OUTPUT)
 
 	toc = timeit.default_timer()
 	print 'Finished!'
