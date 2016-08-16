@@ -277,7 +277,7 @@ def modelC():
 
 model = modelC()
 
-list_data = extract_list_file_from_path('/home/neuropoly/data/small_nobrain')
+list_data = extract_list_file_from_path('/home/neuropoly/data/small_nobrain_nopad')
 #list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/large_nobrain')
 np.random.shuffle(list_data)
 nb_images = len(list_data)
@@ -381,8 +381,8 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
                        total_vect_time + cls_stats['total_fit_time'])
         cls_stats['runtime_history'].append(run_history)
 
-        pickle.dump(cls_stats, open("/home/neuropoly/data/result_large_nobrain_nobatchnorm2/cnn_results_it"+str(i)+".p", "wb"))
-        model.save('/home/neuropoly/data/result_large_nobrain_nobatchnorm2/model_cnn_it'+str(i)+'.h5')
+        pickle.dump(cls_stats, open("/home/neuropoly/data/result_large_nobrain_nopad/cnn_results_it"+str(i)+".p", "wb"))
+        model.save('/home/neuropoly/data/result_large_nobrain_nopad/model_cnn_it'+str(i)+'.h5')
 
         print(progress(cls_stats))
         print('\n')
