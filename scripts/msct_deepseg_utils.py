@@ -116,7 +116,7 @@ def IRS_transformation(irs, imdata, segdata=None):
 
 	imdata = cstretch(imdata, irs.stdrange[1], irs.stdrange[0], 99.9)
 
-	if segdata != None:
+	if segdata is not None:
 		# If we have the segmentation we can pick out the cord coordinates
 		# from the non-zero indicies in the seg
 		nz_idx = np.nonzero(segdata)
