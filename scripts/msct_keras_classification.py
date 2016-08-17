@@ -222,8 +222,8 @@ def modelA():
     model.add(Dense(2))
     model.add(Activation('softmax'))
 
-    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss='categorical_crossentropy', optimizer=sgd)
+    ada = Adadelta(lr=0.1, rho=0.95, epsilon=1e-08)
+    model.compile(loss='categorical_crossentropy', optimizer=ada)
     return model
 
 def modelB():
@@ -277,7 +277,7 @@ def modelC():
     model.compile(loss='categorical_crossentropy', optimizer=ada)
     return model
 
-model = modelC()
+model = modelA()
 
 list_data = extract_list_file_from_path('/home/neuropoly/data/large_nobrain_nopad')
 #list_data = extract_list_file_from_path('/Users/benjamindeleener/data/data_augmentation/small_nobrain_nopad')
