@@ -291,6 +291,7 @@ list_train_data = list_data[nb_test:]
 print 'Number of images', nb_images
 print 'Number of test images=', len(list_test_data)
 print 'Number of train images=', len(list_train_data)
+print list_test_data
 
 data_stream_test = stream_images(list_test_data, patch_size, max_patches_factor, 1)
 data_stream_train = stream_images(list_train_data, patch_size, max_patches_factor, nb_epochs)
