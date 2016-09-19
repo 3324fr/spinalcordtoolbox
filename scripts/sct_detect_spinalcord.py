@@ -38,7 +38,8 @@ def extract_slices_from_image(fname_im):
     nx, ny, nz, nt, px, py, pz, pt = im_data.dim
 
     #im_data.data = (im_data.data - np.mean(im_data.data)) / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
-    im_data.data = 255.0 * im_data.data / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
+    #im_data.data = 255.0 * im_data.data / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
+    im_data.data = 255.0 * (im_data.data - np.percentile(im_data.data, 0)) / np.abs(np.percentile(im_data.data, 0) - np.percentile(im_data.data, 100))
 
     data_im = []
     for k in range(nz):
@@ -70,14 +71,14 @@ def predict(fname_input, fname_model, initial_resolution):
     model = load_model(fname_model)
     input_slices = extract_slices_from_image(fname_input)
 
-    input_image = Image(fname_input).copy()
-    input_image.data *= 0
-
     # first round of patch prediction
     initial_coordinates_x = range(patch_size/2, input_slices[0].shape[0] - patch_size/2, initial_resolution[0])
     initial_coordinates_y = range(patch_size/2, input_slices[0].shape[1] - patch_size/2, initial_resolution[1])
     X, Y = np.meshgrid(initial_coordinates_x, initial_coordinates_y)
     initial_coordinates = np.vstack([X.ravel(), Y.ravel()])
+
+    coord_positive = []
+
     for slice_number in range(0, len(input_slices), initial_resolution[2]):
         current_slice = input_slices[slice_number]
         #import matplotlib.pyplot as plt
@@ -92,9 +93,14 @@ def predict(fname_input, fname_model, initial_resolution):
         patches = patches.reshape(patches.shape[0], 1, patches.shape[1], patches.shape[2])
         #print patches.shape
         y_pred = model.predict_classes(patches, batch_size=32)
-        coord_positive = np.where(y_pred == 1)[0].tolist()
-        for coord in coord_positive:
-            input_image.data[initial_coordinates[0][coord], initial_coordinates[1][coord], slice_number] = 1
+        classes_predictions = np.where(y_pred == 1)[0].tolist()
+        coord_positive.extend([[initial_coordinates[0][coord], initial_coordinates[1][coord], slice_number] for coord in classes_predictions])
+
+    # write results
+    input_image = Image(fname_input).copy()
+    input_image.data *= 0
+    for coord in coord_positive:
+        input_image.data[coord[0], coord[1], coord[2]] = 1
 
     input_image.setFileName('/Users/benjamindeleener/data/machine_learning/test_detection/test.nii.gz')
     input_image.save()
@@ -155,8 +161,6 @@ if __name__ == "__main__":
 
     fname_model = '/Users/benjamindeleener/data/machine_learning/results_detection/2016-08-16_nopad_HCandCSM/model_cnn_it240000.h5'
     #fname_model = '/Users/benjamindeleener/data/machine_learning/results_detection/2016-08-17_HCandCSM_4conv/model_cnn_it530000.h5'
-    #fname_model = '/Users/benjamindeleener/data/machine_learning/results_detection/2016-08-12_no_batch_normalization/model_cnn_it1535000.h5'
-    #fname_model = '/Users/benjamindeleener/data/machine_learning/results_detection/2016-08-15_nopad/model_cnn_it700000.h5'
     initial_resolution = [3, 3, 5]
 
     predict(arguments['-i'], fname_model, initial_resolution)
