@@ -50,7 +50,8 @@ def extract_slices_from_image(fname_im, fname_seg=None):
         im_seg.data = im_seg.data.astype(int)
 
     #im_data.data = (im_data.data - np.mean(im_data.data)) / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
-    im_data.data = 255.0 * im_data.data / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
+    #im_data.data = 255.0 * im_data.data / np.abs(np.percentile(im_data.data, 1) - np.percentile(im_data.data, 99))
+    im_data.data = 255.0 * (im_data.data - np.percentile(im_data.data, 0)) / np.abs(np.percentile(im_data.data, 0) - np.percentile(im_data.data, 100))
 
     data_im = []
     data_seg = []
@@ -383,8 +384,8 @@ for i, (X_train, y_train) in enumerate(minibatch_iterators):
                        total_vect_time + cls_stats['total_fit_time'])
         cls_stats['runtime_history'].append(run_history)
 
-        pickle.dump(cls_stats, open("/home/neuropoly/data/result_large_nobrain_nopad/cnn_results_it"+str(i)+".p", "wb"))
-        model.save('/home/neuropoly/data/result_large_nobrain_nopad/model_cnn_it'+str(i)+'.h5')
+        pickle.dump(cls_stats, open("/home/neuropoly/data/result_large_nobrain_nopad_norm/cnn_results_it"+str(i)+".p", "wb"))
+        model.save('/home/neuropoly/data/result_large_nobrain_nopad_norm/model_cnn_it'+str(i)+'.h5')
 
         print(progress(cls_stats))
         print('\n')
