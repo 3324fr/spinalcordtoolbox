@@ -192,9 +192,9 @@ print('creating the model')
 patch_size = 32
 test_ratio = 0.1
 nb_epochs = 500
-minibatch_size = 1000
+minibatch_size = 128
 max_patches_factor = 10
-evaluation_factor = 5000
+evaluation_factor = 10000
 
 
 def modelA():
