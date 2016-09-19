@@ -92,7 +92,7 @@ def predict(fname_input, fname_model, initial_resolution):
         patches = np.asarray(patches, dtype=int)
         patches = patches.reshape(patches.shape[0], 1, patches.shape[1], patches.shape[2])
         #print patches.shape
-        y_pred = model.predict_classes(patches, batch_size=32)
+        y_pred = model.predict_classes(patches, batch_size=32, verbose=0)
         classes_predictions = np.where(y_pred == 1)[0].tolist()
         coord_positive.extend([[initial_coordinates[0][coord], initial_coordinates[1][coord], slice_number] for coord in classes_predictions])
 
