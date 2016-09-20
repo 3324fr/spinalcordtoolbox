@@ -274,7 +274,7 @@ def modelC():
     model.add(Dense(2))
     model.add(Activation('softmax'))
 
-    ada = Adadelta(lr=0.1, rho=0.95, epsilon=1e-08)
+    ada = Adadelta(lr=0.05, rho=0.95, epsilon=1e-08)
     model.compile(loss='categorical_crossentropy', optimizer=ada)
     return model
 
